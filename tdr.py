@@ -1,12 +1,39 @@
-import pygame
 import time
+import random
+import os
+
+try:
+    import requests
+except ModuleNotFoundError:
+    print("Required module missing(requests), auto installing required module.")
+    os.system("py -m pip install requests")
+    import requests
+
+try:
+    import pygame
+except ModuleNotFoundError:
+    print("Required module missing (pygame), auto installing required module.")
+    os.system("py -m pip install pygame")
+    import pygame
+
+
+def autoupdate():
+    with open(__file__, "r+") as file:
+        r = requests.get("https://raw.githubusercontent.com/Urlocalhuman/Alex-s-projects/refs/heads/Tower-defence/tdr.py")
+        if r.text != file.read():
+            file.write(r.text)
+            print("Autoupdated, re-open game for latest update")
+
+autoupdate()
+
 print("Alex's tower defence")
 time.sleep(1)
-print("version v0.3.2r")
+print("version v0.3.3r")
 gamemode = "normal"
 speed = 10
 enemy_spawn_time = 20
 heal_time = 0
+spawn_time = 0
 
 # Initialize Pygame
 pygame.init()
@@ -31,6 +58,7 @@ BROWN = (120, 72, 0)
 PINK = (255, 0, 255)
 PURPLE = (154, 0, 255)
 ICE = (165, 255, 251)
+VERYDARKGRAY = (64, 64, 64)
 
 # Initialize screen
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -107,7 +135,7 @@ class Rifleman(Tower):
 class Swordsman(Tower):
     def __init__(self, x, y):
         super().__init__(x, y, 50, 60, WHITE)
-        self.shoot_interval = 8
+        self.shoot_interval = 10
         self.last_shot = 0
 
     def attack(self, enemies, bullets):
@@ -121,7 +149,7 @@ class Swordsman(Tower):
 
 class Turret(Tower):
     def __init__(self, x, y):
-        super().__init__(x, y, 275, 35, BLACK)
+        super().__init__(x, y, 275, 45, BLACK)
         self.shoot_interval = 2
         self.last_shot = 0
 
@@ -137,7 +165,7 @@ class Turret(Tower):
 class IceBlaster(Tower):
     def __init__(self, x, y):
         super().__init__(x, y, 100, 4, ICE)
-        self.shoot_interval = 40
+        self.shoot_interval = 30
         self.last_shot = 0
 
     def attack(self, enemies, bullets):
@@ -152,7 +180,7 @@ class IceBlaster(Tower):
 class CBomber(Tower):
     def __init__(self, x, y):
         super().__init__(x, y, 100, 0, PURPLE)
-        self.shoot_interval = 50
+        self.shoot_interval = 40
         self.last_shot = 0
 
     def attack(self, enemies, bullets):
@@ -166,7 +194,7 @@ class CBomber(Tower):
   
 # Define enemy class
 class Enemy:
-    def __init__(self, path, max_health, speed, color, cash, name, shield, healer):
+    def __init__(self, path, max_health, speed, color, cash, name, shield, type):
         self.path = path
         self.health = self.max_health = max_health
         self.speed = speed
@@ -177,7 +205,7 @@ class Enemy:
         self.x, self.y = self.path[self.path_index]
         self.name = name
         self.shield = shield/100
-        self.healer = healer   
+        self.type = type   
 
     def move(self):
         if self.path_index < len(self.path) - 1:
@@ -282,34 +310,38 @@ wave_timer = 0
 tower_selection = 1
 waves = []
 
-#            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0},
+#            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0},
 #blank wave template
 # Wave definitions
 def newwaves():
     global gamemode, waves
     if gamemode == "normal":
         waves = [
-            {"normal": 3, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0}, #1
-            {"normal": 5, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0}, #2
-            {"normal": 6, "fast": 2, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0}, #3
-            {"normal": 12, "fast": 8, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0}, #4
-            {"normal": 3, "fast": 0, "heavy": 6, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0}, #5
-            {"normal": 8, "fast": 5, "heavy": 3, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0}, #6
-            {"normal": 4, "fast": 3, "heavy": 6, "boss": 1, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0}, #7
-            {"normal": 0, "fast": 22, "heavy": 8, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0}, #8
-            {"normal": 0, "fast": 10, "heavy": 0, "boss": 2, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0}, #9
-            {"normal": 16, "fast": 12, "heavy": 20, "boss": 1, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0}, #10
-            {"normal": 0, "fast": 40, "heavy": 0, "boss": 4, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0}, #11
-            {"normal": 12, "fast": 8, "heavy": 18, "boss": 1, "electro": 4, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0}, #12
-            {"normal": 0, "fast": 10, "heavy": 0, "boss": 12, "electro": 8, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0}, #13
-            {"normal": 0, "fast": 0, "heavy": 0, "boss": 2, "electro": 4, "giant": 1, "rusher": 0, "healer": 0, "shielded": 0}, #14
-            {"normal": 0, "fast": 10, "heavy": 0, "boss": 0, "electro": 20, "giant": 0, "rusher": 5, "healer": 0, "shielded": 0}, #15
-            {"normal": 0, "fast": 0, "heavy": 15, "boss": 20, "electro": 0, "giant": 2, "rusher": 0, "healer": 0, "shielded": 0}, #16
-            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 3, "rusher": 7, "healer": 1, "shielded": 0}, 
-            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 10, "giant": 4, "rusher": 0, "healer": 1, "shielded": 2},   
-            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 10, "rusher": 0, "healer": 1, "shielded": 8},
-            {"normal": 0, "fast": 5, "heavy": 0, "boss": 0, "electro": 10, "giant": 0, "rusher": 10, "healer": 1, "shielded": 0},
-
+            {"normal": 3, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0}, #1
+            {"normal": 5, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0}, #2
+            {"normal": 6, "fast": 2, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0}, #3
+            {"normal": 12, "fast": 8, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0}, #4
+            {"normal": 3, "fast": 0, "heavy": 6, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0}, #5
+            {"normal": 8, "fast": 5, "heavy": 3, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0}, #6
+            {"normal": 4, "fast": 3, "heavy": 6, "boss": 1, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0}, #7
+            {"normal": 0, "fast": 22, "heavy": 8, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0}, #8
+            {"normal": 0, "fast": 10, "heavy": 0, "boss": 2, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0}, #9
+            {"normal": 16, "fast": 12, "heavy": 20, "boss": 1, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0}, #10
+            {"normal": 0, "fast": 40, "heavy": 0, "boss": 4, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0}, #11
+            {"normal": 12, "fast": 8, "heavy": 18, "boss": 1, "electro": 4, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0}, #12
+            {"normal": 0, "fast": 10, "heavy": 0, "boss": 12, "electro": 8, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0}, #13
+            {"normal": 0, "fast": 0, "heavy": 0, "boss": 2, "electro": 4, "giant": 1, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0}, #14
+            {"normal": 0, "fast": 10, "heavy": 0, "boss": 0, "electro": 20, "giant": 0, "rusher": 5, "healer": 0, "shielded": 0, "necro": 0}, #15
+            {"normal": 0, "fast": 0, "heavy": 15, "boss": 20, "electro": 0, "giant": 2, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0}, #16
+            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 3, "rusher": 7, "healer": 1, "shielded": 0, "necro": 0}, 
+            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 10, "giant": 4, "rusher": 0, "healer": 1, "shielded": 2, "necro": 0},   
+            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 10, "rusher": 0, "healer": 1, "shielded": 8, "necro": 0},
+            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 10, "giant": 0, "rusher": 10, "healer": 1, "shielded": 0, "necro": 0},
+            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 10, "necro": 0},
+            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0},
+            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0},
+            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 1},
+            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0},
             # More waves can be added here
         ]
 
@@ -370,47 +402,52 @@ def spawn_enemies():
     wave = waves[current_wave - 1]       
     if gamemode == "normal":
         if wave["normal"] > 0:
-            enemies.append(Enemy(map_paths[selected_map], 4, 4, GREEN, 2, "Normal", 0, False))
+            enemies.append(Enemy(map_paths[selected_map], 4, 4, GREEN, 2, "Normal", 0, "n"))
             wave["normal"] -= 1
         if wave["normal"] == 0:
             if wave["fast"] > 0:
-                enemies.append(Enemy(map_paths[selected_map], 3, 6, LIGHTBLUE, 5, "Fast", 0, False))
+                enemies.append(Enemy(map_paths[selected_map], 3, 6, LIGHTBLUE, 5, "Fast", 0, "n"))
                 wave["fast"] -= 1
 
             if wave["fast"] == 0:
                 if wave["heavy"] > 0:
-                    enemies.append(Enemy(map_paths[selected_map], 12, 3, GBROWN, 15, "Heavy", 10, False))
+                    enemies.append(Enemy(map_paths[selected_map], 12, 3, GBROWN, 15, "Heavy", 10, "n"))
                     wave["heavy"] -= 1
 
                 if wave["heavy"] == 0:
                     if wave["boss"] > 0:
-                        enemies.append(Enemy(map_paths[selected_map], 140, 2, DGREEN, 60, "Easy Boss", 0, False))
+                        enemies.append(Enemy(map_paths[selected_map], 140, 2, DGREEN, 60, "Easy Boss", 0, "n"))
                         wave["boss"] -= 1
 
                     if wave["boss"] == 0:
                         if wave["electro"] > 0:
-                            enemies.append(Enemy(map_paths[selected_map], 60, 8, YELLOW, 40, "Electro", 0, False))
+                            enemies.append(Enemy(map_paths[selected_map], 60, 8, YELLOW, 40, "Electro", 0, "n"))
                             wave["electro"] -= 1
 
                         if wave["electro"] == 0:
                             if wave["giant"] > 0:
-                                enemies.append(Enemy(map_paths[selected_map], 1750, 1, DARKGRAY, 250, "Giant Boss", 20, False))
+                                enemies.append(Enemy(map_paths[selected_map], 1750, 1, DARKGRAY, 250, "Giant Boss", 20, "n"))
                                 wave["giant"] -= 1
                                         
                             if wave["giant"] == 0:
                                 if wave["rusher"] > 0:
-                                    enemies.append(Enemy(map_paths[selected_map], 250, 7, RED, 80, "Rusher", 0, False))
+                                    enemies.append(Enemy(map_paths[selected_map], 250, 7, RED, 80, "Rusher", 0, "n"))
                                     wave["rusher"] -= 1
                                 
                                 if wave["giant"] == 0:
                                     if wave["healer"] > 0:
-                                        enemies.append(Enemy(map_paths[selected_map], 850, 2, PINK, 100, "Healer", 15, True))
+                                        enemies.append(Enemy(map_paths[selected_map], 850, 2, PINK, 100, "Healer", 15, "h"))
                                         wave["healer"] -= 1
 
                                     if wave["healer"] == 0:
                                         if wave["shielded"] > 0:
-                                            enemies.append(Enemy(map_paths[selected_map], 400, 3, GRAY, 120, "Shielded", 60, False))
+                                            enemies.append(Enemy(map_paths[selected_map], 400, 3, GRAY, 120, "Shielded", 60, "n"))
                                             wave["shielded"] -= 1
+
+                                        if wave["shielded"] == 0:
+                                            if wave["necro"] > 0:
+                                                enemies.append(Enemy(map_paths[selected_map], 1500, 3, VERYDARKGRAY, 120, "Necromancer", 50, "s"))
+                                                wave["necro"] -= 1                                            
     if len(enemies) == 0:
         wave_started = False
         cash += (50 + (current_wave * 25))
@@ -506,24 +543,24 @@ while running:
                         if tower_selection == 1 and cash >= 175:
                             towers.append(Shooter(x, y))
                             cash -= 175
-                        if tower_selection == 2 and cash >= 4500:
+                        if tower_selection == 2 and cash >= 3000:
                             towers.append(CBomber(x, y))
-                            cash -= 4500    
-                        elif tower_selection == 3 and cash >= 2500:
+                            cash -= 3000    
+                        elif tower_selection == 3 and cash >= 2000:
                             towers.append(IceBlaster(x, y))
-                            cash -= 2500    
+                            cash -= 2000    
                         elif tower_selection == 4 and cash >= 500:
                             towers.append(Archer(x, y))
                             cash -= 500
                         elif tower_selection == 5 and cash >= 1100:
                             towers.append(Rifleman(x, y))
                             cash -= 1100
-                        elif tower_selection == 6 and cash >= 1000:
+                        elif tower_selection == 6 and cash >= 1100:
                             towers.append(Swordsman(x, y))
-                            cash -= 1000
-                        elif tower_selection == 7 and cash >= 5200:
+                            cash -= 1100
+                        elif tower_selection == 7 and cash >= 4800:
                             towers.append(Turret(x, y))
-                            cash -= 5200
+                            cash -= 4800
 
 
             elif current_screen == "shop":
@@ -574,7 +611,7 @@ while running:
                 elif enemy.health <= 0:
                     cash += enemy.cash
                     enemies.remove(enemy)
-                elif enemy.healer:
+                elif enemy.type == "h":
                     if heal_time >= 150:                        
                         for enemy in enemies:
                             enemy.health += round(enemy.max_health/7)
@@ -583,6 +620,15 @@ while running:
                         heal_time = 0
                     else:
                         heal_time += 1
+
+                elif enemy.type == "s":
+                    if spawn_time >= 200:
+                        wave = waves[current_wave - 1]   
+                        for i in range(random.randint(6, 10)):
+                            spawn_enemy = random.choice(list(wave.keys()))
+                            wave[spawn_enemy] += 1
+
+
 
             # Update towers
             for tower in towers:
@@ -618,17 +664,17 @@ while running:
             if tower_selection == 1:
                 text = font.render("Selected Tower: Shooter (175 cash)", True, BLACK)
             elif tower_selection == 2:
-                text = font.render("Selected Tower: Confusion Bomber (4500 cash)", True, BLACK)
+                text = font.render("Selected Tower: Confusion Bomber (3000 cash)", True, BLACK)
             elif tower_selection == 3:
-                text = font.render("Selected Tower: Ice Blaster (2500 cash)", True, BLACK)
+                text = font.render("Selected Tower: Ice Blaster (2000 cash)", True, BLACK)
             elif tower_selection == 4:
                 text = font.render("Selected Tower: Archer (500 cash)", True, BLACK)
             elif tower_selection == 5:
                 text = font.render("Selected Tower: Rifleman (1100 cash)", True, BLACK)
             elif tower_selection == 6:
-                text = font.render("Selected Tower: Swordsman (1000 cash)", True, BLACK)
+                text = font.render("Selected Tower: Swordsman (1100 cash)", True, BLACK)
             elif tower_selection == 7:
-                text = font.render("Selected Tower: Turret (5200 cash)", True, BLACK)
+                text = font.render("Selected Tower: Turret (4800 cash)", True, BLACK)
             screen.blit(text, (200, 10))
 
             # Check for game over
