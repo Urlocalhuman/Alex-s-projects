@@ -17,14 +17,12 @@ except ModuleNotFoundError:
     import pygame
 
 
-def autoupdate():
-    with open(__file__, "r+") as file:
+def updcheck():
+    with open(__file__, "r") as file:
         r = requests.get("https://raw.githubusercontent.com/Urlocalhuman/Alex-s-projects/refs/heads/Tower-defence/tdr.py")
         if r.text != file.read():
-            file.write(r.text)
-            print("Autoupdated, re-open game for latest update")
-
-autoupdate()
+            print("New update available")
+updcheck()
 
 print("Alex's tower defence")
 time.sleep(1)
