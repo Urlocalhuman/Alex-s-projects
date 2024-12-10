@@ -3,26 +3,11 @@ import random
 import os
 
 try:
-    import requests
-except ModuleNotFoundError:
-    print("Required module missing(requests), auto installing required module.")
-    os.system("py -m pip install requests")
-    import requests
-
-try:
     import pygame
 except ModuleNotFoundError:
     print("Required module missing (pygame), auto installing required module.")
     os.system("py -m pip install pygame")
     import pygame
-
-
-def updcheck():
-    with open(__file__, "r") as file:
-        r = requests.get("https://raw.githubusercontent.com/Urlocalhuman/Alex-s-projects/refs/heads/Tower-defence/tdr.py")
-        if r.text != file.read():
-            print("New update available")
-updcheck()
 
 print("Alex's tower defence")
 time.sleep(1)
