@@ -117,7 +117,7 @@ class Rifleman(Tower):
 
 class Swordsman(Tower):
     def __init__(self, x, y):
-        super().__init__(x, y, 50, 60, WHITE)
+        super().__init__(x, y, 35, 60, WHITE)
         self.shoot_interval = 10
         self.last_shot = 0
 
