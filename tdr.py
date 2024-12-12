@@ -11,12 +11,13 @@ except ModuleNotFoundError:
 
 print("Alex's tower defence")
 time.sleep(1)
-print("version v0.3.3r")
+print("version v0.4r")
 gamemode = "normal"
 speed = 10
 enemy_spawn_time = 20
 heal_time = 0
 spawn_time = 0
+buff_time = 0
 
 # Initialize Pygame
 pygame.init()
@@ -42,6 +43,7 @@ PINK = (255, 0, 255)
 PURPLE = (154, 0, 255)
 ICE = (165, 255, 251)
 VERYDARKGRAY = (64, 64, 64)
+BURPLE = (82, 0, 163)
 
 # Initialize screen
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -117,7 +119,7 @@ class Rifleman(Tower):
 
 class Swordsman(Tower):
     def __init__(self, x, y):
-        super().__init__(x, y, 35, 60, WHITE)
+        super().__init__(x, y, 50, 60, WHITE)
         self.shoot_interval = 10
         self.last_shot = 0
 
@@ -293,38 +295,38 @@ wave_timer = 0
 tower_selection = 1
 waves = []
 
-#            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0},
+#            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0},
 #blank wave template
 # Wave definitions
 def newwaves():
     global gamemode, waves
     if gamemode == "normal":
         waves = [
-            {"normal": 3, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0}, #1
-            {"normal": 5, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0}, #2
-            {"normal": 6, "fast": 2, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0}, #3
-            {"normal": 12, "fast": 8, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0}, #4
-            {"normal": 3, "fast": 0, "heavy": 6, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0}, #5
-            {"normal": 8, "fast": 5, "heavy": 3, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0}, #6
-            {"normal": 4, "fast": 3, "heavy": 6, "boss": 1, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0}, #7
-            {"normal": 0, "fast": 22, "heavy": 8, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0}, #8
-            {"normal": 0, "fast": 10, "heavy": 0, "boss": 2, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0}, #9
-            {"normal": 16, "fast": 12, "heavy": 20, "boss": 1, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0}, #10
-            {"normal": 0, "fast": 40, "heavy": 0, "boss": 4, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0}, #11
-            {"normal": 12, "fast": 8, "heavy": 18, "boss": 1, "electro": 4, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0}, #12
-            {"normal": 0, "fast": 10, "heavy": 0, "boss": 12, "electro": 8, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0}, #13
-            {"normal": 0, "fast": 0, "heavy": 0, "boss": 2, "electro": 4, "giant": 1, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0}, #14
-            {"normal": 0, "fast": 10, "heavy": 0, "boss": 0, "electro": 20, "giant": 0, "rusher": 5, "healer": 0, "shielded": 0, "necro": 0}, #15
-            {"normal": 0, "fast": 0, "heavy": 15, "boss": 20, "electro": 0, "giant": 2, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0}, #16
-            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 3, "rusher": 7, "healer": 1, "shielded": 0, "necro": 0}, 
-            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 10, "giant": 4, "rusher": 0, "healer": 1, "shielded": 2, "necro": 0},   
-            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 10, "rusher": 0, "healer": 1, "shielded": 8, "necro": 0},
-            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 10, "giant": 0, "rusher": 10, "healer": 1, "shielded": 0, "necro": 0},
-            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 10, "necro": 0},
-            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0},
-            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0},
-            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 1},
-            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0},
+            {"normal": 3, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #1
+            {"normal": 5, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #2
+            {"normal": 6, "fast": 2, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #3
+            {"normal": 12, "fast": 8, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #4
+            {"normal": 3, "fast": 0, "heavy": 6, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #5
+            {"normal": 8, "fast": 5, "heavy": 3, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #6
+            {"normal": 4, "fast": 3, "heavy": 6, "boss": 1, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #7
+            {"normal": 0, "fast": 22, "heavy": 8, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #8
+            {"normal": 0, "fast": 10, "heavy": 0, "boss": 2, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #9
+            {"normal": 16, "fast": 12, "heavy": 20, "boss": 1, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #10
+            {"normal": 0, "fast": 40, "heavy": 0, "boss": 4, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #11
+            {"normal": 12, "fast": 8, "heavy": 18, "boss": 1, "electro": 4, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #12
+            {"normal": 0, "fast": 10, "heavy": 0, "boss": 12, "electro": 8, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #13
+            {"normal": 0, "fast": 0, "heavy": 0, "boss": 2, "electro": 4, "giant": 1, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #14
+            {"normal": 0, "fast": 10, "heavy": 0, "boss": 0, "electro": 20, "giant": 0, "rusher": 5, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #15
+            {"normal": 0, "fast": 0, "heavy": 15, "boss": 20, "electro": 0, "giant": 2, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #16
+            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 3, "rusher": 7, "healer": 1, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #17
+            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 10, "giant": 4, "rusher": 0, "healer": 1, "shielded": 2, "necro": 0, "titan": 0, "jester": 0}, #18   
+            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 10, "rusher": 0, "healer": 1, "shielded": 8, "necro": 0, "titan": 0, "jester": 0}, #19
+            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 10, "giant": 0, "rusher": 10, "healer": 1, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #20
+            {"normal": 8, "fast": 4, "heavy": 10, "boss": 2, "electro": 6, "giant": 2, "rusher": 12, "healer": 0, "shielded": 4, "necro": 0, "titan": 0, "jester": 0}, #21
+            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 22, "healer": 2, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #22
+            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 4, "rusher": 0, "healer": 1, "shielded": 0, "necro": 1, "titan": 0, "jester": 0}, #23
+            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 2, "jester": 1}, #24
+            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 20, "healer": 3, "shielded": 8, "necro": 3, "titan": 1, "jester": 2}, #25
             # More waves can be added here
         ]
 
@@ -429,8 +431,18 @@ def spawn_enemies():
 
                                         if wave["shielded"] == 0:
                                             if wave["necro"] > 0:
-                                                enemies.append(Enemy(map_paths[selected_map], 1500, 3, VERYDARKGRAY, 120, "Necromancer", 50, "s"))
-                                                wave["necro"] -= 1                                            
+                                                enemies.append(Enemy(map_paths[selected_map], 1500, 3, VERYDARKGRAY, 125, "Necromancer", 25, "s"))
+                                                wave["necro"] -= 1
+
+                                            if wave["necro"] == 0:
+                                                if wave["titan"] > 0:
+                                                    enemies.append(Enemy(map_paths[selected_map], 17500, 2, BURPLE, 500, "Titan Boss", 50, "n"))
+                                                    wave["titan"] -= 1
+
+                                                if wave["titan"] == 0:
+                                                    if wave["jester"] > 0:
+                                                        enemies.append(Enemy(map_paths[selected_map], 4000, 3, PURPLE, 225, "Jester", 20, "j"))
+                                                        wave["jester"] -= 1                                                 
     if len(enemies) == 0:
         wave_started = False
         cash += (50 + (current_wave * 25))
@@ -610,7 +622,25 @@ while running:
                         for i in range(random.randint(6, 10)):
                             spawn_enemy = random.choice(list(wave.keys()))
                             wave[spawn_enemy] += 1
+                            spawn_time = 0
+                    else:
+                        spawn_time += 1
 
+                elif enemy.type == "j":
+                    if buff_time >= 175:
+                        buffed_enem = random.randint(0, len(enemies-1))
+                        buff = random.choice(["s", "h", "d"])
+                        if buff == "s":
+                            enemies[buffed_enem].speed += random.randint(1, 2)
+                        elif buff == "h":
+                            enemies[buffed_enem].health += round(enemies[buffed_enem].max_health/10)
+                        elif buff == "d":
+                            enemies[buffed_enem].shield += 0.2
+                            if enemies[buffed_enem].shield >= 1:
+                                enemies[buffed_enem].shield = 0.8
+                        buff_time = 0
+                    else:
+                        buff_time += 1
 
 
             # Update towers
