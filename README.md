@@ -1,3 +1,19 @@
+<style>
+  .divider {
+  font-size: 30px;
+  display: flex;
+  align-items: center;
+}
+
+.divider::before, .divider::after {
+  flex: 1;
+  content: '';
+  padding: 3px;
+  background-color: red;
+  margin: 5px;
+}
+</style>
+
 <h1>
   NEW UPDATE
 </h1>
