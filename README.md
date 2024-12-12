@@ -8,16 +8,37 @@
   </h3>
   <p>
     New stuff:
+  </p>
+  <p>
     New enemy: Necromancer
+  </p>
+  <p>
       - spawns in other enemies
+  </p>
+  <p>
     New enemy: Jester
+  </p>
+  <p>
       - buffs other enemies
+  </p>
+  <p>
       - buffs include:
+  </p>
+  <p>
         - shield +20%
+  <p>
         - health +10%
+  </p>
+  <p>
         - speed +1 or +2
+  </p>
+  <p>
     New enemy: Titan
+  </p>
+  <p>
       - big guy
+  </p>
+  <p>
       - has lots of hp and 50% defence
   </p>
   <h4>
