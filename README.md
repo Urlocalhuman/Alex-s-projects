@@ -1,18 +1,3 @@
-<style>
-  .divider {
-  font-size: 30px;
-  display: flex;
-  align-items: center;
-}
-
-.divider::before, .divider::after {
-  flex: 1;
-  content: '';
-  padding: 3px;
-  background-color: red;
-  margin: 5px;
-}
-</style>
 <body>
   <h1>
     NEW UPDATE
@@ -40,8 +25,14 @@
   </h4>
   <p>
     - Boss for wave 30
+  </p>
+  <p>
     - A new tower that buffs other towers with increased range/firerate
+  </p>
+  <p>
     - Custom boss/enemy models
+  </p>
+  <p>
     - Maybe a soundtrack of some sorts
   </p>
   - Me 12/12/24 at like 9 pm
