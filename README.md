@@ -56,5 +56,5 @@
   <p>
     - Maybe a soundtrack of some sorts
   </p>
-  - Me 12/12/24 at like 9 pm
+  - Me 12/12/24 at like 9 pm also dont check the html for this its horrible
 </body>
