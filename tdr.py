@@ -11,7 +11,7 @@ except ModuleNotFoundError:
 
 print("Alex's tower defence")
 time.sleep(1)
-print("version v0.4.0.1r")
+print("version v0.4.0.2r")
 gamemode = "normal"
 speed = 10
 enemy_spawn_time = 20
@@ -628,7 +628,7 @@ while running:
 
                 elif enemy.type == "j":
                     if buff_time >= 175:
-                        buffed_enem = random.randint(0, len(enemies-1))
+                        buffed_enem = random.randint(0, (len(enemies)-1))
                         buff = random.choice(["s", "h", "d"])
                         if buff == "s":
                             enemies[buffed_enem].speed += random.randint(1, 2)
