@@ -620,7 +620,7 @@ while running:
                     if spawn_time >= 200:
                         wave = waves[current_wave - 1]   
                         for i in range(random.randint(6, 10)):
-                            spawn_enemy = random.choice(list(wave.keys()))
+                            spawn_enemy = random.choice(list(wave.keys())[:6])
                             wave[spawn_enemy] += 1
                             spawn_time = 0
                     else:
