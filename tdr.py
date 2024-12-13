@@ -11,7 +11,7 @@ except ModuleNotFoundError:
 
 print("Alex's tower defence")
 time.sleep(1)
-print("version v0.4r")
+print("version v0.4.0.1r")
 gamemode = "normal"
 speed = 10
 enemy_spawn_time = 20
