@@ -54,7 +54,7 @@
     - Custom boss/enemy models
   </p>
   <p>
-    - Maybe a soundtrack of some sorts
+    - Maybe a soundtrack of some sorts and sounds for shooting, enemies, ect
   </p>
   - Me 12/12/24 at like 9 pm also dont check the html for this its horrible
 </body>
