@@ -9,16 +9,17 @@ except ModuleNotFoundError:
     os.system("py -m pip install pygame")
     import pygame
 
+
 print("Alex's tower defence")
 time.sleep(1)
-print("version v0.4.0.2r")
+print("version v0.x5r")
 gamemode = "normal"
 speed = 10
 enemy_spawn_time = 20
 heal_time = 0
 spawn_time = 0
 buff_time = 0
-
+towerselected = False
 # Initialize Pygame
 pygame.init()
 
@@ -54,27 +55,39 @@ clock = pygame.time.Clock()
 
 # Define tower class
 class Tower:
-    def __init__(self, x, y, range, damage, color):
+    def __init__(self, x, y, range, damage, color, cost, sell):
         self.x = x
         self.y = y
         self.range = range
         self.damage = damage
-        self.level = 1
+        self.level = 0
         self.color = color
+        self.selected = False
+        self.cost = cost
+        self.sell = sell
 
     def draw(self, screen):
         pygame.draw.circle(screen, self.color, (self.x, self.y), self.range, 1)
         pygame.draw.rect(screen, self.color, (self.x - 10, self.y - 10, 20, 20))
+        if self.selected:
+            pygame.draw.rect(screen, RED, (self.x - 15, self.y - 15, 30, 30), 2)
 
     def attack(self, enemies, bullets):
         pass
+
+    def getupgrades(self):
+        pass
+
+    def upgrade(self):
+        pass
+ 
 
 
 
 
 class Shooter(Tower):
     def __init__(self, x, y):
-        super().__init__(x, y, 75, 2, DARKGRAY)
+        super().__init__(x, y, 75, 2, DARKGRAY, 100, 58)
         self.shoot_interval = 10
         self.last_shot = 0
 
@@ -86,10 +99,62 @@ class Shooter(Tower):
                     if (enemy.x - self.x) ** 2 + (enemy.y - self.y) ** 2 <= self.range ** 2:
                         bullets.append(GeneralBullet(self.x, self.y, enemy, self.damage, "normal"))
                         break   
+    
+    def getupgrades(self):
+        self.font = pygame.font.Font(None, 25)
+        self.towername = self.font.render(f"Shooter (level {self.level})", True, BLACK)
+        screen.blit(self.towername, (55, 130))
+
+        if self.level == 0:
+            self.text = ["Cost: 100", "+ 1 firerate", "Sell: 58"]
+        if self.level == 1:
+            self.text = ["Cost: 250", "+ 1 damage", "+ 10 range", "Sell: 91"]
+        if self.level == 2:
+            self.text = ["Cost: 400", "+ 1 firerate", "+ 2 damage", "+ 15 range", "Sell: 175"]
+        if self.level == 3:
+            self.text = ["MAX LEVEL", "Sell: 308"]
+
+        for i in range(len(self.text)):
+            screen.blit(self.font.render(self.text[i] ,True, BLACK), (55, 150+(20*i)))
+    
+    def upgrade(self, cash):
+        if self.level == 0:
+            if cash >= self.cost:
+                cash -= self.cost
+                self.level += 1
+                self.cost = 250
+                self.shoot_interval -= 1
+                self.sell = 91
+
+            
+        if self.level == 1:
+            if cash >= self.cost:
+                cash -= self.cost
+                self.level += 1
+                self.cost = 400
+                self.damage += 1
+                self.range += 10
+                self.sell = 175
+
+        if self.level == 2:
+            if cash >= self.cost:
+                cash -= self.cost
+                self.level += 1
+                self.cost = 0
+                self.range += 15
+                self.shoot_interval -= 1
+                self.damage += 2
+                self.sell = 308
+
+    
+                
+
+
+        
 
 class Archer(Tower):
     def __init__(self, x, y):
-        super().__init__(x, y, 350, 120, BROWN)
+        super().__init__(x, y, 350, 120, BROWN, 300, 166)
         self.shoot_interval = 100
         self.last_shot = 0
 
@@ -101,6 +166,65 @@ class Archer(Tower):
                     if (enemy.x - self.x) ** 2 + (enemy.y - self.y) ** 2 <= self.range ** 2:
                         bullets.append(GeneralBullet(self.x, self.y, enemy, self.damage, "normal"))
                         break     
+    def getupgrades(self):
+        self.font = pygame.font.Font(None, 25)
+        self.towername = self.font.render(f"Shooter (level {self.level})", True, BLACK)
+        screen.blit(self.towername, (55, 130))
+
+        if self.level == 0:
+            self.text = ["Cost: 300", "+ 2 firerate", "+ 20 damage", "Sell: 166"]
+        if self.level == 1:
+            self.text = ["Cost: 400", "+ 20 damage", "+ 30 range", "Sell: 266"]
+        if self.level == 2:
+            self.text = ["Cost: 1200", "+ 6 firerate", "+ 30 damage", "+ 30 range", "Sell: 400"]
+        if self.level == 3:
+            self.text = ["Cost: 1300", "+ 12 firerate", "+ 20 range", "Sell: 800"]
+        if self.level == 4:
+            self.text = ["MAX LEVEL", "Sell: 1233"]
+
+        for i in range(len(self.text)):
+            screen.blit(self.font.render(self.text[i] ,True, BLACK), (55, 150+(20*i)))
+    
+    def upgrade(self, cash):
+        if self.level == 0:
+            if cash >= self.cost:
+                cash -= self.cost
+                self.level += 1
+                self.cost = 400
+                self.shoot_interval -= 2
+                self.damage += 20
+                self.sell = 266
+
+            
+        if self.level == 1:
+            if cash >= self.cost:
+                cash -= self.cost
+                self.level += 1
+                self.cost = 1200
+                self.damage += 20
+                self.range += 30
+                self.sell = 400
+
+        if self.level == 2:
+            if cash >= self.cost:
+                cash -= self.cost
+                self.level += 1
+                self.cost = 800
+                self.range += 30
+                self.shoot_interval -= 6
+                self.damage += 30
+                self.sell = 308
+
+        if self.level == 3:
+            if cash >= self.cost:
+                cash -= self.cost
+                self.level += 1
+                self.cost = 0
+                self.shoot_interval -= 12
+                self.range += 20
+                self.sell = 1233
+
+
 
 class Rifleman(Tower):
     def __init__(self, x, y):
@@ -213,6 +337,7 @@ class Enemy:
 
     def draw(self, screen):
         pygame.draw.rect(screen, self.color, (self.x, self.y, 20, 20))
+        pygame.draw.rect(screen, BLACK, (self.x , self.y , 21, 21), 2)
         health_bar_width = 60
         health_ratio = self.health / self.max_health
         pygame.draw.rect(screen, RED, (self.x - 10, self.y - 20, health_bar_width, 5))
@@ -534,7 +659,18 @@ while running:
                     elif 300 <= x <= 500 and 450 <= y <= 500:
                         current_screen = "shop"
                 else:
-                    if placed[f"{tower_selection}"] < placelimits[f"{tower_selection}"]:
+
+                    for tower in towers:
+                        if tower.x - 10 <= x <= tower.x + 10 and tower.y - 10 <= y <= tower.y + 10:
+                            for tower in towers:
+                                if tower.selected:
+                                    tower.selected = False
+                            tower.selected = True
+                            selected_tower = tower
+                            towerselected = True
+                            break
+
+                    if placed[f"{tower_selection}"] < placelimits[f"{tower_selection}"] and towerselected == False:
                         if tower_selection == 1 and cash >= 175:
                             towers.append(Shooter(x, y))
                             cash -= 175
@@ -577,7 +713,23 @@ while running:
                 elif event.key == pygame.K_6:
                     tower_selection = 6
                 elif event.key == pygame.K_7:
-                    tower_selection = 7                
+                    tower_selection = 7
+                elif event.key == pygame.K_d:
+                    for tower in towers:
+                        tower.selected = False
+                    towerselected = False
+                elif event.key == pygame.K_e:
+                    for tower in towers:
+                        if tower.selected:
+                            tower.upgrade(cash)
+                elif event.key == pygame.K_x:
+                    for tower in towers:
+                        if tower.selected:
+                            cash += tower.sell
+                            towers.remove(tower)
+                            towerselected = False
+
+                                
 
     if current_screen == "main":
         if selected_map is None:
@@ -689,6 +841,21 @@ while running:
             elif tower_selection == 7:
                 text = font.render("Selected Tower: Turret (4800 cash)", True, BLACK)
             screen.blit(text, (200, 10))
+
+            # upgrades
+            if towerselected:
+                pygame.draw.rect(screen, DARKGRAY, (50, 120, 200, 300))
+                pygame.draw.rect(screen, BLACK, (50, 120, 200, 300), 2)
+                pygame.draw.rect(screen, GREEN, (50, 370, 100, 50))
+                pygame.draw.rect(screen, RED, (150, 370, 100, 50))
+                font2 = pygame.font.Font(None, 25)
+                selldiag = font2.render("Sell (x)", True, BLACK)
+                upgdiag = font2.render("Upgrade (e)", True, BLACK)
+                screen.blit(upgdiag, (50, 370))
+                screen.blit(selldiag, (150, 370))
+                for tower in towers:
+                    if tower.selected:
+                        tower.getupgrades()
 
             # Check for game over
             if base_health <= 0:
