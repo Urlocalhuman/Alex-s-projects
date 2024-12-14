@@ -20,7 +20,7 @@
   </p>
   <p>
     Re added tower selection but its way better now (also tip: d to deselect)
-  <\p>
+  </p>
   <h4>
     Planned content:
   </h4>
