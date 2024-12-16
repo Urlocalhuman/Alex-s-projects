@@ -168,7 +168,7 @@ class Archer(Tower):
                         break     
     def getupgrades(self):
         self.font = pygame.font.Font(None, 25)
-        self.towername = self.font.render(f"Shooter (level {self.level})", True, BLACK)
+        self.towername = self.font.render(f"Archer (level {self.level})", True, BLACK)
         screen.blit(self.towername, (55, 130))
 
         if self.level == 0:
