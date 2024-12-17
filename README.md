@@ -4,7 +4,7 @@
   </h1>
   <h3>
     tdr.py
-    version 0.5r
+    version 0.5r (very untested, expect a few bugs here and there)
   </h3>
   <p>
     New stuff:
