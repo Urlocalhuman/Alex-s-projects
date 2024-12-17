@@ -4,7 +4,7 @@
   </h1>
   <h3>
     tdr.py
-    version 0.x5r (x meaning unfinished update)
+    version 0.5r
   </h3>
   <p>
     New stuff:
@@ -16,16 +16,20 @@
       - Added some new ui
   </p>
   <p>
-      - Can now sell and upgrade towers (currently only for archer + shooter)
+      - Can now sell and upgrade towers
   </p>
   <p>
     Re added tower selection but its way better now (also tip: d to deselect)
   </p>
+  
   <h4>
     Planned content:
   </h4>
   <p>
     - Boss for wave 30
+  </p>
+  <p>
+    - game balancing
   </p>
   <p>
     - A new tower that buffs other towers with increased range/firerate
@@ -36,5 +40,5 @@
   <p>
     - Maybe a soundtrack of some sorts and sounds for shooting, enemies, ect
   </p>
-  - Me 14/12/24 at like 1 pm also dont check the html for this its horrible
+  - Me 17/12/24 at like 9 pm also i realised that i am not supposed to use html for this ima fix this later
 </body>
