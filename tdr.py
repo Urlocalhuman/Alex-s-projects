@@ -12,7 +12,7 @@ except ModuleNotFoundError:
 
 print("Alex's tower defence")
 time.sleep(1)
-print("version v0.5r")
+print("version v0.5.0.1r")
 gamemode = "normal"
 speed = 10
 enemy_spawn_time = 20
@@ -147,6 +147,7 @@ class Shooter(Tower):
                 self.shoot_interval -= 1
                 self.damage += 2
                 self.sell = 308
+        return cash
 
     
                 
@@ -224,6 +225,7 @@ class Archer(Tower):
                 self.shoot_interval -= 12
                 self.range += 20
                 self.sell = 1233
+        return cash
 
 
 
@@ -296,6 +298,7 @@ class Rifleman(Tower):
                 self.damage += 6
                 self.range += 20
                 self.sell = 1350
+        return cash
 
 
 class Swordsman(Tower):
@@ -358,6 +361,7 @@ class Swordsman(Tower):
                 self.damage += 6
                 self.shoot_interval -= 2
                 self.sell = 2000
+        return cash
 
 
 
@@ -442,6 +446,7 @@ class Turret(Tower):
                 self.damage += 10
                 self.shoot_interval -= 1
                 self.sell = 8266
+        return cash
 
 
 class IceBlaster(Tower):
@@ -504,6 +509,7 @@ class IceBlaster(Tower):
                 self.power += 1
                 self.shoot_interval -= 2
                 self.sell = 1033
+        return cash
                 
 class CBomber(Tower):
     def __init__(self, x, y):
@@ -566,6 +572,7 @@ class CBomber(Tower):
                 self.power += 1
                 self.shoot_interval -= 5
                 self.sell = 1900
+        return cash
   
 # Define enemy class
 class Enemy:
@@ -985,7 +992,7 @@ while running:
                 elif event.key == pygame.K_e:
                     for tower in towers:
                         if tower.selected:
-                            tower.upgrade(cash)
+                            cash = tower.upgrade(cash)
                 elif event.key == pygame.K_x:
                     for tower in towers:
                         if tower.selected:
