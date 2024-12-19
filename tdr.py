@@ -726,7 +726,7 @@ def newwaves():
             {"normal": 8, "fast": 4, "heavy": 10, "boss": 2, "electro": 6, "giant": 2, "rusher": 12, "healer": 0, "shielded": 4, "necro": 0, "titan": 0, "jester": 0}, #21
             {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 22, "healer": 2, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #22
             {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 4, "rusher": 0, "healer": 1, "shielded": 0, "necro": 1, "titan": 0, "jester": 0}, #23
-            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 2, "jester": 1}, #24
+            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 1, "jester": 1}, #24
             {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 20, "healer": 3, "shielded": 8, "necro": 3, "titan": 1, "jester": 2}, #25
             # More waves can be added here
         ]
