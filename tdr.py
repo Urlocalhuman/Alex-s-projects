@@ -12,13 +12,14 @@ except ModuleNotFoundError:
 
 print("Alex's tower defence")
 time.sleep(1)
-print("version v0.5.0.1r")
+print("version v0.5.1r")
 gamemode = "normal"
 speed = 10
 enemy_spawn_time = 20
 heal_time = 0
 spawn_time = 0
 buff_time = 0
+lastupgradetime = 0
 towerselected = False
 # Initialize Pygame
 pygame.init()
@@ -70,11 +71,10 @@ class Tower:
             self.charge = 1200
 
     def draw(self, screen):
-        pygame.draw.circle(screen, self.color, (self.x, self.y), self.range, 1)
         pygame.draw.rect(screen, self.color, (self.x - 10, self.y - 10, 20, 20))
         if self.selected:
             pygame.draw.rect(screen, RED, (self.x - 15, self.y - 15, 30, 30), 2)
-
+            pygame.draw.circle(screen, self.color, (self.x, self.y), self.range, 1)
     def attack(self, enemies, bullets):
         pass
 
@@ -129,7 +129,7 @@ class Shooter(Tower):
                 self.shoot_interval -= 1
                 self.sell = 91
 
-        if self.level == 1:
+        elif self.level == 1:
             if cash >= self.cost:
                 cash -= self.cost
                 self.level += 1
@@ -138,7 +138,7 @@ class Shooter(Tower):
                 self.range += 10
                 self.sell = 175
 
-        if self.level == 2:
+        elif self.level == 2:
             if cash >= self.cost:
                 cash -= self.cost
                 self.level += 1
@@ -198,7 +198,7 @@ class Archer(Tower):
                 self.damage += 20
                 self.sell = 266
 
-        if self.level == 1:
+        elif self.level == 1:
             if cash >= self.cost:
                 cash -= self.cost
                 self.level += 1
@@ -207,7 +207,7 @@ class Archer(Tower):
                 self.range += 30
                 self.sell = 400
 
-        if self.level == 2:
+        elif self.level == 2:
             if cash >= self.cost:
                 cash -= self.cost
                 self.level += 1
@@ -217,7 +217,7 @@ class Archer(Tower):
                 self.damage += 30
                 self.sell = 308
 
-        if self.level == 3:
+        elif self.level == 3:
             if cash >= self.cost:
                 cash -= self.cost
                 self.level += 1
@@ -272,7 +272,7 @@ class Rifleman(Tower):
                 self.range += 10
                 self.sell = 433
 
-        if self.level == 1:
+        elif self.level == 1:
             if cash >= self.cost:
                 cash -= self.cost
                 self.level += 1
@@ -281,7 +281,7 @@ class Rifleman(Tower):
                 self.range += 20
                 self.sell = 650
 
-        if self.level == 2:
+        elif self.level == 2:
             if cash >= self.cost:
                 cash -= self.cost
                 self.level += 1
@@ -290,7 +290,7 @@ class Rifleman(Tower):
                 self.shoot_interval -= 1
                 self.sell = 983
 
-        if self.level == 3:
+        elif self.level == 3:
             if cash >= self.cost:
                 cash -= self.cost
                 self.level += 1
@@ -343,7 +343,7 @@ class Swordsman(Tower):
                 self.damage + 4
                 self.sell = 700
 
-        if self.level == 1:
+        elif self.level == 1:
             if cash >= self.cost:
                 cash -= self.cost
                 self.level += 1
@@ -352,7 +352,7 @@ class Swordsman(Tower):
                 self.shoot_interval -= 1
                 self.sell = 1166
 
-        if self.level == 2:
+        elif self.level == 2:
             if cash >= self.cost:
                 cash -= self.cost
                 self.level += 1
@@ -410,7 +410,7 @@ class Turret(Tower):
                 self.range += 20
                 self.sell = 1766
 
-        if self.level == 1:
+        elif self.level == 1:
             if cash >= self.cost:
                 cash -= self.cost
                 self.level += 1
@@ -418,7 +418,7 @@ class Turret(Tower):
                 self.damage += 3
                 self.sell = 2100
 
-        if self.level == 2:
+        elif self.level == 2:
             if cash >= self.cost:
                 cash -= self.cost
                 self.level += 1
@@ -428,7 +428,7 @@ class Turret(Tower):
                 self.canstun = False
                 self.sell = 2933
         
-        if self.level == 3:
+        elif self.level == 3:
             if cash >= self.cost:
                 cash -= self.cost
                 self.level += 1
@@ -437,7 +437,7 @@ class Turret(Tower):
                 self.damage += 5
                 self.sell = 4266
 
-        if self.level == 4:
+        elif self.level == 4:
             if cash >= self.cost:
                 cash -= self.cost
                 self.level += 1
@@ -491,7 +491,7 @@ class IceBlaster(Tower):
                 self.shoot_interval -= 2
                 self.sell = 566
 
-        if self.level == 1:
+        elif self.level == 1:
             if cash >= self.cost:
                 cash -= self.cost
                 self.level += 1
@@ -500,7 +500,7 @@ class IceBlaster(Tower):
                 self.range += 10
                 self.sell = 700
 
-        if self.level == 2:
+        elif self.level == 2:
             if cash >= self.cost:
                 cash -= self.cost
                 self.level += 1
@@ -554,7 +554,7 @@ class CBomber(Tower):
                 self.range += 10
                 self.sell = 1100
 
-        if self.level == 1:
+        elif self.level == 1:
             if cash >= self.cost:
                 cash -= self.cost
                 self.level += 1
@@ -563,7 +563,7 @@ class CBomber(Tower):
                 self.range += 15
                 self.sell = 1433
 
-        if self.level == 2:
+        elif self.level == 2:
             if cash >= self.cost:
                 cash -= self.cost
                 self.level += 1
@@ -641,11 +641,13 @@ class Bullet:
         if abs(self.x - self.target.x) < self.speed and abs(self.y - self.target.y) < self.speed:
             self.target.health -= round(self.damage - (self.damage * self.target.shield))
             if self.type == "confusion":
-                if self.target.path_index >= 0 and self.path_index >= self.power:
+                if self.target.path_index > 0 and self.target.path_index > self.power:
                     self.target.path_index -= self.power
+                    if self.target.path_index <= -1:
+                        self.target.path_index = 0
+                        
             elif self.type == "ice":
-                self.target.speed -= 2
-                if self.target.speed >= 0 and self.target.speed >= self.power:
+                if self.target.speed > 0 and self.target.speed > self.power:
                     self.target.speed -= self.power
 
             return True
@@ -990,9 +992,11 @@ while running:
                         tower.selected = False
                     towerselected = False
                 elif event.key == pygame.K_e:
-                    for tower in towers:
-                        if tower.selected:
-                            cash = tower.upgrade(cash)
+                    if lastupgradetime >= 15:
+                        for tower in towers:
+                            if tower.selected:
+                                cash = tower.upgrade(cash)
+                        lastupgradetime = 0
                 elif event.key == pygame.K_x:
                     for tower in towers:
                         if tower.selected:
@@ -1143,6 +1147,8 @@ while running:
     elif current_screen == "shop":
         shop_screen()  # Ensure shop screen is redrawn each frame
 
+
+    lastupgradetime += 1
     pygame.display.flip()
     clock.tick(30)
 
