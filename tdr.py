@@ -1,18 +1,21 @@
 import time
 import random
-import os
+import subprocess
+import sys
 
-try:
-    import pygame
-except ModuleNotFoundError:
-    print("Required module missing (pygame), auto installing required module.")
-    os.system("py -m pip install pygame")
-    import pygame
-
+def checkmodules():
+    required_modules = ['pygame']
+    for module in required_modules:
+        try:
+            __import__(module)
+        except ImportError:
+            subprocess.check_call([sys.executable, '-m', 'pip', 'install', module])
+checkmodules()
+import pygame
 
 print("Alex's tower defence")
 time.sleep(1)
-print("version v0.5.1r")
+print("version v0.6r")
 gamemode = "normal"
 speed = 10
 enemy_spawn_time = 20
@@ -21,6 +24,28 @@ spawn_time = 0
 buff_time = 0
 lastupgradetime = 0
 towerselected = False
+moving_ui = False
+gui_x = 50
+gui_y = 120
+devmode = False
+
+
+
+while True:
+    do = input("start or help? (s/h)").lower()
+    if do == "s":
+        break
+    elif do == "h":
+        print("Use keys 1-9 to switch between towers. ")
+        print("Click to place a tower. ")
+        print("Click on a tower to select it and view its upgrades. ")
+        print("Use 'u' to upgrade a selected tower, and use 'x' to sell it. ")
+        print("Use 'd' to deselect a tower. ")
+        print("(EXPERIMENTAL) Use 'm' to move the upgrade gui (requires devmode!)")
+    elif do == "d":
+        print("Devmode enabled. IMPORTANT: PROGRESS WILL NOT BE SAVED IN DEVMODE! ")
+        devmode = True
+
 # Initialize Pygame
 pygame.init()
 
@@ -56,7 +81,7 @@ clock = pygame.time.Clock()
 
 # Define tower class
 class Tower:
-    def __init__(self, x, y, range, damage, color, cost, sell, canstun=True, charge=False):
+    def __init__(self, x, y, range, damage, color, cost, sell, canstun=True, charge=False, special="n", slot=0):
         self.x = x
         self.y = y
         self.range = range
@@ -67,8 +92,10 @@ class Tower:
         self.cost = cost
         self.sell = sell
         self.canstun = canstun
+        self.slot = slot
         if charge == True:
             self.charge = 1200
+        self.special = special
 
     def draw(self, screen):
         pygame.draw.rect(screen, self.color, (self.x - 10, self.y - 10, 20, 20))
@@ -103,10 +130,10 @@ class Shooter(Tower):
                         bullets.append(GeneralBullet(self.x, self.y, enemy, self.damage, "normal"))
                         break   
     
-    def getupgrades(self):
+    def getupgrades(self, gui_x, gui_y):
         self.font = pygame.font.Font(None, 25)
         self.towername = self.font.render(f"Shooter (level {self.level})", True, BLACK)
-        screen.blit(self.towername, (55, 130))
+        screen.blit(self.towername, (gui_x+5, gui_y+5))
 
         if self.level == 0:
             self.text = ["Cost: 100", "+ 1 firerate", "Sell: 58"]
@@ -118,7 +145,7 @@ class Shooter(Tower):
             self.text = ["MAX LEVEL", "Sell: 308"]
 
         for i in range(len(self.text)):
-            screen.blit(self.font.render(self.text[i] ,True, BLACK), (55, 150+(20*i)))
+            screen.blit(self.font.render(self.text[i] ,True, BLACK), (gui_x+5, (gui_y+25)+(20*i)))
     
     def upgrade(self, cash):
         if self.level == 0:
@@ -169,10 +196,10 @@ class Archer(Tower):
                     if (enemy.x - self.x) ** 2 + (enemy.y - self.y) ** 2 <= self.range ** 2:
                         bullets.append(GeneralBullet(self.x, self.y, enemy, self.damage, "normal"))
                         break     
-    def getupgrades(self):
+    def getupgrades(self, gui_x, gui_y):
         self.font = pygame.font.Font(None, 25)
         self.towername = self.font.render(f"Archer (level {self.level})", True, BLACK)
-        screen.blit(self.towername, (55, 130))
+        screen.blit(self.towername, (gui_x+5, gui_y+5))
 
         if self.level == 0:
             self.text = ["Cost: 300", "+ 2 firerate", "+ 20 damage", "Sell: 166"]
@@ -186,7 +213,7 @@ class Archer(Tower):
             self.text = ["MAX LEVEL", "Sell: 1233"]
 
         for i in range(len(self.text)):
-            screen.blit(self.font.render(self.text[i] ,True, BLACK), (55, 150+(20*i)))
+            screen.blit(self.font.render(self.text[i] ,True, BLACK), (gui_x+5, (gui_y+25)+(20*i)))
     
     def upgrade(self, cash):
         if self.level == 0:
@@ -244,10 +271,10 @@ class Rifleman(Tower):
                         bullets.append(GeneralBullet(self.x, self.y, enemy, self.damage, "normal"))
                         break
 
-    def getupgrades(self):
+    def getupgrades(self, gui_x, gui_y):
         self.font = pygame.font.Font(None, 25)
         self.towername = self.font.render(f"Rifleman (level {self.level})", True, BLACK)
-        screen.blit(self.towername, (55, 130))
+        screen.blit(self.towername, (gui_x+5, gui_y+5))
 
         if self.level == 0:
             self.text = ["Cost: 200", "+ 10 range", "Sell: 366"]
@@ -261,7 +288,7 @@ class Rifleman(Tower):
             self.text = ["MAX LEVEL", "Sell: 1350"]
 
         for i in range(len(self.text)):
-            screen.blit(self.font.render(self.text[i] ,True, BLACK), (55, 150+(20*i)))
+            screen.blit(self.font.render(self.text[i] ,True, BLACK), (gui_x+5, (gui_y+25)+(20*i)))
     
     def upgrade(self, cash):
         if self.level == 0:
@@ -316,10 +343,10 @@ class Swordsman(Tower):
                         bullets.append(MeleeAttack(self.x, self.y, enemy, self.damage, "normal"))
                         break
 
-    def getupgrades(self):
+    def getupgrades(self, gui_x, gui_y):
         self.font = pygame.font.Font(None, 25)
         self.towername = self.font.render(f"Swordsman (level {self.level})", True, BLACK)
-        screen.blit(self.towername, (55, 130))
+        screen.blit(self.towername, (gui_x+5, gui_y+5))
 
         if self.level == 0:
             self.text = ["Cost: 1000", "+ 5 range", "+ 4 damage" , "Sell: 366"]
@@ -331,7 +358,7 @@ class Swordsman(Tower):
             self.text = ["MAX LEVEL", "Sell: 2000"]
 
         for i in range(len(self.text)):
-            screen.blit(self.font.render(self.text[i] ,True, BLACK), (55, 150+(20*i)))
+            screen.blit(self.font.render(self.text[i] ,True, BLACK), (gui_x+5, (gui_y+25)+(20*i)))
     
     def upgrade(self, cash):
         if self.level == 0:
@@ -380,10 +407,10 @@ class Turret(Tower):
                         bullets.append(GeneralBullet(self.x, self.y, enemy, self.damage, "normal"))
                         break
 
-    def getupgrades(self):
+    def getupgrades(self, gui_x, gui_y):
         self.font = pygame.font.Font(None, 25)
         self.towername = self.font.render(f"Turret (level {self.level})", True, BLACK)
-        screen.blit(self.towername, (55, 130))
+        screen.blit(self.towername, (gui_x+5, gui_y+5))
 
         if self.level == 0:
             self.text = ["Cost: 500", "+ 20 range", "Sell: 1600"]
@@ -399,7 +426,7 @@ class Turret(Tower):
             self.text = ["MAX LEVEL", "Sell: 8266"]
 
         for i in range(len(self.text)):
-            screen.blit(self.font.render(self.text[i] ,True, BLACK), (55, 150+(20*i)))
+            screen.blit(self.font.render(self.text[i] ,True, BLACK), (gui_x+5, (gui_y+25)+(20*i)))
     
     def upgrade(self, cash):
         if self.level == 0:
@@ -465,10 +492,10 @@ class IceBlaster(Tower):
                         bullets.append(GeneralBullet(self.x, self.y, enemy, self.damage, "ice", self.power))
                         break
 
-    def getupgrades(self):
+    def getupgrades(self, gui_x, gui_y):
         self.font = pygame.font.Font(None, 25)
         self.towername = self.font.render(f"Ice Blaster (level {self.level})", True, BLACK)
-        screen.blit(self.towername, (55, 130))
+        screen.blit(self.towername, (gui_x+5, gui_y+5))
 
         if self.level == 0:
             self.text = ["Cost: 200", "+ 2 firerate", "Sell: 500"]
@@ -480,7 +507,7 @@ class IceBlaster(Tower):
             self.text = ["MAX LEVEL", "Sell: 1033"]
 
         for i in range(len(self.text)):
-            screen.blit(self.font.render(self.text[i] ,True, BLACK), (55, 150+(20*i)))
+            screen.blit(self.font.render(self.text[i] ,True, BLACK), (gui_x+5, (gui_y+25)+(20*i)))
     
     def upgrade(self, cash):
         if self.level == 0:
@@ -527,10 +554,10 @@ class CBomber(Tower):
                         bullets.append(GeneralBullet(self.x, self.y, enemy, self.damage, "confusion", self.power))
                         break
 
-    def getupgrades(self):
+    def getupgrades(self, gui_x, gui_y):
         self.font = pygame.font.Font(None, 25)
         self.towername = self.font.render(f"Confusion bomber (level {self.level})", True, BLACK)
-        screen.blit(self.towername, (55, 130))
+        screen.blit(self.towername, (gui_x+5, gui_y+5))
 
         if self.level == 0:
             self.text = ["Cost: 800", "+ 5 firerate", "+ 10 range", "Sell: 833"]
@@ -542,7 +569,7 @@ class CBomber(Tower):
             self.text = ["MAX LEVEL", "Sell: 1900"]
 
         for i in range(len(self.text)):
-            screen.blit(self.font.render(self.text[i] ,True, BLACK), (55, 150+(20*i)))
+            screen.blit(self.font.render(self.text[i] ,True, BLACK), (gui_x+5, (gui_y+25)+(20*i)))
     
     def upgrade(self, cash):
         if self.level == 0:
@@ -618,6 +645,175 @@ class Enemy:
         font = pygame.font.Font(None, 18)
         text = font.render(f"{int(self.health)}/{self.max_health} {self.name}", True, BLACK)
         screen.blit(text, (self.x - 10, self.y - 35))
+
+class Sentry(Tower):
+    def __init__(self, x, y, lv, slot):
+        super().__init__(x, y, 0, 0, DARKGRAY, 0, 0, canstun=False, special="s")
+        self.lv = lv
+        self.slot = slot
+        if self.lv == 0:
+            self.shoot_interval = 10
+            self.damage = 3
+            self.range = 80
+            self.hp = 30
+            self.max_time = 300
+        elif self.lv == 1:
+            self.shoot_interval = 10
+            self.damage = 5
+            self.range = 90
+            self.hp = 40
+            self.max_time = 600
+        elif self.lv == 2:
+            self.shoot_interval = 4
+            self.damage = 6
+            self.range = 110
+            self.hp = 120
+            self.max_time = 1000
+        elif self.lv == 3:
+            self.shoot_interval = 5
+            self.damage = 25
+            self.range = 140
+            self.hp = 300
+            self.max_time = 1300
+        elif self.lv == 4:
+            self.shoot_interval = 2
+            self.damage = 18
+            self.range = 190
+            self.max_time = 2000
+        self.last_shot = 0
+        self.time = 0
+
+    def tick(self):
+        self.time += 1
+
+    def attack(self, enemies, bullets):
+        self.last_shot += 1
+        if self.last_shot >= self.shoot_interval:
+            self.last_shot = 0
+            for enemy in enemies:
+                    if (enemy.x - self.x) ** 2 + (enemy.y - self.y) ** 2 <= self.range ** 2:
+                        bullets.append(GeneralBullet(self.x, self.y, enemy, self.damage, "normal"))
+                        break   
+    
+    def getupgrades(self, gui_x, gui_y):
+        self.font = pygame.font.Font(None, 25)
+        self.towername = self.font.render(f"Sentry (level {self.lv}) from id {self.slot}", True, BLACK)
+        screen.blit(self.towername, (gui_x+5, gui_y+5))
+
+        self.text = ["No upgrades", f"Time left: {(self.max_time-self.time)}", f"HP: {self.hp}"]
+
+        for i in range(len(self.text)):
+            screen.blit(self.font.render(self.text[i] ,True, BLACK), (gui_x+5, (gui_y+25)+(20*i)))
+    
+    def upgrade(self, cash):
+        pass
+
+
+class Engineer(Tower):
+    def __init__(self, x, y, slot):
+        super().__init__(x, y, 120, 16, RED, 600, 266, special="e", slot=slot)
+        self.shoot_interval = 14
+        self.last_shot = 0
+        self.scrap = 0
+        self.maxscrap = 64
+        self.sentries = 0
+        self.maxsentries = 1
+        self.sentrylv = 0
+
+    def attack(self, enemies, bullets):
+        self.last_shot += 1
+        if self.last_shot >= self.shoot_interval:
+            self.last_shot = 0
+            for enemy in enemies:
+                    if (enemy.x - self.x) ** 2 + (enemy.y - self.y) ** 2 <= self.range ** 2:
+                        bullets.append(GeneralBullet(self.x, self.y, enemy, self.damage, "normal"))
+                        self.scrap += (self.damage/2)
+                        if self.scrap >= self.maxscrap:
+                            self.scrap = self.maxscrap
+                        break
+                    
+
+    def getupgrades(self, gui_x, gui_y):
+        self.font = pygame.font.Font(None, 25)
+        self.towername = self.font.render(f"Engineer {self.slot} (level {self.level})", True, BLACK)
+        screen.blit(self.towername, (gui_x+5, gui_y+5))
+
+        if self.level == 0:
+            self.text = ["Cost: 600", "+ 4 damage", "2 max sentries", "Sell: 266", f"Current scrap: {self.scrap}/{self.maxscrap}"]
+        if self.level == 1:
+            self.text = ["Cost: 1000", "+ 5 damage", "+ 10 range", "96 max scrap", "better sentries", "Sell: 466", f"Current scrap: {self.scrap}/{self.maxscrap}"]
+        if self.level == 2:
+            self.text = ["Cost: 4000", "+ 1 firerate", "+ 10 range", "+ 5 damage", "4 max sentries", "minigun sentry", "120 max scrap", "Sell: 800", f"Current scrap: {self.scrap}/{self.maxscrap}"]
+        if self.level == 3:
+            self.text = ["Cost: 8000", "+10 damage", "+ 20 range", "powerhouse sentry", "240 max scrap", "6 max sentries", "Sell: 2133", f"Current scrap: {self.scrap}/{self.maxscrap}"]
+        if self.level == 4:
+            self.text = ["Cost: 16000", "+1 firerate", "+ 25 damage", "+ 20 range", "460 max scrap", "max level sentry", "8 max sentries", "Sell: 4800", f"Current scrap: {self.scrap}/{self.maxscrap}"]
+        if self.level == 5:
+            self.text = ["MAX LEVEL", "Sell: 10133", f"Current scrap: {self.scrap}/{self.maxscrap}"]
+
+        for i in range(len(self.text)):
+            screen.blit(self.font.render(self.text[i] ,True, BLACK), (gui_x+5, (gui_y+25)+(20*i)))
+    
+    def upgrade(self, cash):
+        if self.level == 0:
+            if cash >= self.cost:
+                cash -= self.cost
+                self.level += 1
+                self.cost = 1000
+                self.damage += 4
+                self.maxsentries = 2
+                self.sell = 466
+
+        elif self.level == 1:
+            if cash >= self.cost:
+                cash -= self.cost
+                self.level += 1
+                self.cost = 4000
+                self.range += 10
+                self.damage += 5
+                self.maxscrap = 96
+                self.sentrylv += 1
+                self.sell = 800
+
+        elif self.level == 2:
+            if cash >= self.cost:
+                cash -= self.cost
+                self.level += 1
+                self.cost = 8000
+                self.range += 10
+                self.shoot_interval += 1
+                self.damage += 5
+                self.maxsentries = 4
+                self.maxscrap = 120
+                self.sentrylv = 2
+                self.sell = 2133
+        
+        elif self.level == 3:
+            if cash >= self.cost:
+                cash -= self.cost
+                self.level += 1
+                self.cost = 16000
+                self.range += 20
+                self.damage += 10
+                self.maxsentries = 6
+                self.maxscrap = 240
+                self.sentrylv = 3
+                self.sell = 4800
+
+        elif self.level == 4:
+            if cash >= self.cost:
+                cash -= self.cost
+                self.level += 1
+                self.cost = 0
+                self.range += 20
+                self.damage += 25
+                self.shoot_interval -= 1
+                self.maxscrap= 460
+                self.maxsentries = 8
+                self.sentrylv = 4
+                self.sell = 10133
+        return cash
+
 
 # Define bullet class
 class Bullet:
@@ -906,8 +1102,8 @@ def shop_screen():
 
     pygame.display.flip()
 
-placelimits = {"1": 25, "2": 5, "3": 5, "4": 12, "5": 8, "6": 20, "7": 2}
-placed = {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6": 0, "7": 0}
+placelimits = {"1": 25, "2": 5, "3": 5, "4": 12, "5": 8, "6": 20, "7": 2, "8": 12}
+placed = {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6": 0, "7": 0, "8": 0}
 
 current_screen = "main"
 # Main game loop
@@ -933,40 +1129,52 @@ while running:
                     elif 300 <= x <= 500 and 450 <= y <= 500:
                         current_screen = "shop"
                 else:
+                    if not moving_ui:
+                        for tower in towers:
+                            if tower.x - 15 <= x <= tower.x + 15 and tower.y - 15 <= y <= tower.y + 15:
+                                for thing in towers:
+                                    if thing.selected:
+                                        thing.selected = False
+                                tower.selected = True
+                                towerselected = True
+                                break
 
-                    for tower in towers:
-                        if tower.x - 15 <= x <= tower.x + 15 and tower.y - 15 <= y <= tower.y + 15:
-                            for thing in towers:
-                                if thing.selected:
-                                    thing.selected = False
-                            tower.selected = True
-                            towerselected = True
-                            break
-
-                    if placed[f"{tower_selection}"] < placelimits[f"{tower_selection}"] and towerselected == False:
-                        if tower_selection == 1 and cash >= 175:
-                            towers.append(Shooter(x, y))
-                            cash -= 175
-                        if tower_selection == 2 and cash >= 2500:
-                            towers.append(CBomber(x, y))
-                            cash -= 2500    
-                        elif tower_selection == 3 and cash >= 1500:
-                            towers.append(IceBlaster(x, y))
-                            cash -= 1500    
-                        elif tower_selection == 4 and cash >= 500:
-                            towers.append(Archer(x, y))
-                            cash -= 500
-                        elif tower_selection == 5 and cash >= 1100:
-                            towers.append(Rifleman(x, y))
-                            cash -= 1100
-                        elif tower_selection == 6 and cash >= 1100:
-                            towers.append(Swordsman(x, y))
-                            cash -= 1100
-                        elif tower_selection == 7 and cash >= 4800:
-                            towers.append(Turret(x, y))
-                            cash -= 4800
-
-
+                        if placed[f"{tower_selection}"] < placelimits[f"{tower_selection}"] and towerselected == False:
+                            if tower_selection == 1 and cash >= 175:
+                                towers.append(Shooter(x, y))
+                                placed["1"] += 1
+                                cash -= 175
+                            if tower_selection == 2 and cash >= 2500:
+                                towers.append(CBomber(x, y))
+                                placed["2"] += 1
+                                cash -= 2500    
+                            elif tower_selection == 3 and cash >= 1500:
+                                towers.append(IceBlaster(x, y))
+                                placed["3"] += 1
+                                cash -= 1500    
+                            elif tower_selection == 4 and cash >= 500:
+                                towers.append(Archer(x, y))
+                                placed["4"] += 1
+                                cash -= 500
+                            elif tower_selection == 5 and cash >= 1100:
+                                towers.append(Rifleman(x, y))
+                                placed["5"] += 1
+                                cash -= 1100
+                            elif tower_selection == 6 and cash >= 1100:
+                                towers.append(Swordsman(x, y))
+                                placed["6"] += 1
+                                cash -= 1100
+                            elif tower_selection == 7 and cash >= 4800:
+                                towers.append(Turret(x, y))
+                                placed["7"] += 1
+                                cash -= 4800
+                            elif tower_selection == 8 and cash >= 800:
+                                towers.append(Engineer(x, y, placed["8"]))
+                                placed["8"] += 1
+                                cash -= 800  
+                    else:
+                        gui_x, gui_y = x, y
+                        moving_ui = False
             elif current_screen == "shop":
                 if 700 <= x <= 780 and 10 <= y <= 50:  # Back button
                     current_screen = "main"
@@ -987,6 +1195,8 @@ while running:
                     tower_selection = 6
                 elif event.key == pygame.K_7:
                     tower_selection = 7
+                elif event.key == pygame.K_8:
+                    tower_selection = 8
                 elif event.key == pygame.K_d:
                     for tower in towers:
                         tower.selected = False
@@ -1003,6 +1213,8 @@ while running:
                             cash += tower.sell
                             towers.remove(tower)
                             towerselected = False
+                elif event.key == pygame.K_m:
+                    moving_ui = not moving_ui 
 
                                 
 
@@ -1073,6 +1285,31 @@ while running:
             # Update towers
             for tower in towers:
                 tower.attack(enemies, bullets, )
+                if tower.special == "s":
+                    tower.tick()
+                    if tower.time >= tower.max_time:
+                        for engineer in towers:
+                            if engineer.special == "e":
+                                if engineer.slot == tower.slot:
+                                    engineer.sentries -= 1
+                        towers.remove(tower)
+
+                if tower.special == "e":
+                    if tower.scrap >= tower.maxscrap:
+                        if tower.maxsentries > tower.sentries:
+                            if random.randint(1, 2) == 1:
+                                xpos = random.randint(-30, -10)
+                            else:
+                                xpos = random.randint(10, 30)
+
+                            if random.randint(1, 2) == 1:
+                                ypos = random.randint(-30, -10)
+                            else:
+                                ypos = random.randint(10, 30)
+
+                            towers.append(Sentry(tower.x+xpos, tower.y+ypos, tower.sentrylv, tower.slot))
+                            tower.sentries += 1
+                            tower.scrap = 0   
 
             # Update bullets
             for bullet in bullets[:]:
@@ -1115,22 +1352,24 @@ while running:
                 text = font.render("Selected Tower: Swordsman (1100 cash)", True, BLACK)
             elif tower_selection == 7:
                 text = font.render("Selected Tower: Turret (4800 cash)", True, BLACK)
+            elif tower_selection == 8:
+                text = font.render("Selected Tower: Engineer (800 cash)", True, BLACK)
             screen.blit(text, (200, 10))
 
             # upgrades
             if towerselected:
-                pygame.draw.rect(screen, DARKGRAY, (50, 120, 200, 300))
-                pygame.draw.rect(screen, BLACK, (50, 120, 200, 300), 2)
-                pygame.draw.rect(screen, GREEN, (50, 370, 100, 50))
-                pygame.draw.rect(screen, RED, (150, 370, 100, 50))
+                pygame.draw.rect(screen, DARKGRAY if not moving_ui else GRAY, (gui_x, gui_y, 200, 300))
+                pygame.draw.rect(screen, BLACK, (gui_x, gui_y, 200, 300), 2)
+                pygame.draw.rect(screen, GREEN, (gui_x, gui_y+250, 100, 50))
+                pygame.draw.rect(screen, RED, (gui_x+100, gui_y+250, 100, 50))
                 font2 = pygame.font.Font(None, 25)
                 selldiag = font2.render("Sell (x)", True, BLACK)
                 upgdiag = font2.render("Upgrade (e)", True, BLACK)
-                screen.blit(upgdiag, (50, 370))
-                screen.blit(selldiag, (150, 370))
+                screen.blit(upgdiag, (gui_x, gui_y+250))
+                screen.blit(selldiag, (gui_x+100, gui_y+250))
                 for tower in towers:
                     if tower.selected:
-                        tower.getupgrades()
+                        tower.getupgrades(gui_x, gui_y)
 
             # Check for game over
             if base_health <= 0:
