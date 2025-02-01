@@ -41,7 +41,7 @@ while True:
         print("Click on a tower to select it and view its upgrades. ")
         print("Use 'u' to upgrade a selected tower, and use 'x' to sell it. ")
         print("Use 'd' to deselect a tower. ")
-        print("(EXPERIMENTAL) Use 'm' to move the upgrade gui (requires devmode!)")
+        print("Use 'm' to move the upgrade gui")
     elif do == "d":
         print("Devmode enabled. IMPORTANT: PROGRESS WILL NOT BE SAVED IN DEVMODE! ")
         devmode = True
