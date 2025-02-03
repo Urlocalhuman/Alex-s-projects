@@ -16,7 +16,7 @@ import pygame
 
 print("Alex's tower defence")
 time.sleep(1)
-print("version v0.6r")
+print("version v0.7r")
 gamemode = "normal"
 speed = 10
 enemy_spawn_time = 20
