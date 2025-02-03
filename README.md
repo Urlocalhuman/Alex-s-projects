@@ -1,8 +1,8 @@
 # New tdr update 
-### ver 0.6r
+### ver 0.7r
 ## New features:
-- Ability to move upgrade ui (with m)
-- Placement limits now actually work
-- Engineer slot bug fixed
-- Game now has help feature for new players
-### Me 1/2/2025 at like 9 am
+- Added 'units'
+- New tower: military base (not 100% finished but works well)
+- Engineer max lowered
+- A developer mode to help me test stuff
+### Me 3/2/2025 at like 4 pm
