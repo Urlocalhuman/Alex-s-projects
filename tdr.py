@@ -3,6 +3,7 @@ import random
 import subprocess
 import sys
 
+
 def checkmodules():
     required_modules = ['pygame']
     for module in required_modules:
@@ -71,6 +72,7 @@ PURPLE = (154, 0, 255)
 ICE = (165, 255, 251)
 VERYDARKGRAY = (64, 64, 64)
 BURPLE = (82, 0, 163)
+STINKYBROWN = (173, 38, 0)
 
 # Initialize screen
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -78,6 +80,8 @@ pygame.display.set_caption("Alex's tower defense")
 
 # Clock for controlling frame rate
 clock = pygame.time.Clock()
+
+
 
 # Define tower class
 class Tower:
@@ -601,51 +605,6 @@ class CBomber(Tower):
                 self.sell = 1900
         return cash
   
-# Define enemy class
-class Enemy:
-    def __init__(self, path, max_health, speed, color, cash, name, shield, type):
-        self.path = path
-        self.health = self.max_health = max_health
-        self.speed = speed
-        self.color = color
-        self.cash = cash
-        self.path_index = 0
-        self.speed2 = self.speed
-        self.x, self.y = self.path[self.path_index]
-        self.name = name
-        self.shield = shield/100
-        self.type = type   
-
-    def move(self):
-        if self.path_index < len(self.path) - 1:
-            target_x, target_y = self.path[self.path_index + 1]
-            dx, dy = target_x - self.x, target_y - self.y
-            distance = (dx ** 2 + dy ** 2) ** 0.5
-
-            if distance != 0:
-                dx, dy = dx / distance, dy / distance
-                self.x += dx * self.speed
-                self.y += dy * self.speed
-
-                if abs(self.x - target_x) < self.speed and abs(self.y - target_y) < self.speed:
-                    self.path_index += 1
-            else:
-                self.path_index += 1
-        else:
-            return True
-        return False
-
-    def draw(self, screen):
-        pygame.draw.rect(screen, self.color, (self.x, self.y, 20, 20))
-        pygame.draw.rect(screen, BLACK, (self.x , self.y , 21, 21), 2)
-        health_bar_width = 60
-        health_ratio = self.health / self.max_health
-        pygame.draw.rect(screen, RED, (self.x - 10, self.y - 20, health_bar_width, 5))
-        pygame.draw.rect(screen, GREEN, (self.x - 10, self.y - 20, health_bar_width * health_ratio, 5))
-        font = pygame.font.Font(None, 18)
-        text = font.render(f"{int(self.health)}/{self.max_health} {self.name}", True, BLACK)
-        screen.blit(text, (self.x - 10, self.y - 35))
-
 class Sentry(Tower):
     def __init__(self, x, y, lv, slot):
         super().__init__(x, y, 0, 0, DARKGRAY, 0, 0, canstun=False, special="s")
@@ -680,6 +639,7 @@ class Sentry(Tower):
             self.damage = 18
             self.range = 190
             self.max_time = 2000
+            self.hp = 350
         self.last_shot = 0
         self.time = 0
 
@@ -814,6 +774,137 @@ class Engineer(Tower):
                 self.sell = 10133
         return cash
 
+class MilBase(Tower):
+    def __init__(self, x, y):
+        super().__init__(x, y, 10, 0, BROWN, 100, 1100, canstun=False, special="u")
+        self.lastsummon = 0
+        self.summontime = 800
+        self.unitlevel = 0
+    def attack(self, enemies, bullets):
+        if self.lastsummon >= self.summontime:
+            if self.unitlevel == 0:
+                units.append(Unit(map_paths[selected_map], 20, 3, DARKGRAY, "Jeep lv0", 0, 20, 100))
+            elif self.unitlevel == 1:
+                units.append(Unit(map_paths[selected_map], 80, 3, DARKGRAY, "Jeep lv1", 0, 20, 100))
+            elif self.unitlevel == 2:
+                units.append(Unit(map_paths[selected_map], 120, 3, DARKGRAY, "Jeep lv2", 5, 200, 11))
+            elif self.unitlevel == 3:
+                units.append(Unit(map_paths[selected_map], 300, 2, STINKYBROWN, "Tank", 45, 220, 14))
+            self.lastsummon = 0
+        else:
+            self.lastsummon += 1
+    
+    def getupgrades(self, gui_x, gui_y):
+        self.font = pygame.font.Font(None, 25)
+        self.towername = self.font.render(f"Military Base (level {self.level})", True, BLACK)
+        screen.blit(self.towername, (gui_x+5, gui_y+5))
+
+        if self.level == 0:
+            self.text = ["Cost: 100", "Shorter summoning time", f"Summoning time: {self.lastsummon}/{self.summontime}"]
+        elif self.level == 1:
+            self.text = ["Cost: 400", "Stronger jeeps", f"Summoning time: {self.lastsummon}/{self.summontime}"]
+        elif self.level == 2:
+            self.text = ["Cost: 1200", "Stronger jeeps", "Shorter summoning time", f"Summoning time: {self.lastsummon}/{self.summontime}"] 
+        elif self.level == 3:
+            self.text = ["Cost: 4000", "Unlocks tanks", f"Summoning time: {self.lastsummon}/{self.summontime}"]
+        elif self.level == 4:
+            self.text = ["MAX LEVEL", "Sell: 3000", f"Summoning time: {self.lastsummon}/{self.summontime}"]        
+
+        for i in range(len(self.text)):
+            screen.blit(self.font.render(self.text[i] ,True, BLACK), (gui_x+5, (gui_y+25)+(20*i)))
+    
+    def upgrade(self, cash):
+        if self.level == 0:
+            if cash >= self.cost:
+                cash -= self.cost
+                self.level += 1
+                self.cost = 400
+                self.summontime = 730
+                self.sell = 1133
+        
+        elif self.level == 1:
+            if cash >= self.cost:
+                cash -= self.cost
+                self.level += 1
+                self.unitlevel = 1
+                self.cost = 1200
+                self.sell = 1266
+
+        elif self.level == 2:
+            if cash >= self.cost:
+                cash -= self.cost
+                self.level += 1
+                self.unitlevel = 2
+                self.summontime = 660
+                self.cost = 4000
+                self.sell = 1666
+
+        elif self.level == 3:
+            if cash >= self.cost:
+                cash -= self.cost
+                self.level += 1
+                self.unitlevel = 3
+                self.cost = 0
+                self.sell = 3000 
+
+        return cash  
+
+# Define enemy class
+class Enemy:
+    def __init__(self, path, max_health, speed, color, cash, name, shield, type):
+        self.path = path
+        self.health = self.max_health = max_health
+        self.speed = speed
+        self.color = color
+        self.cash = cash
+        self.path_index = 0
+        self.speed2 = self.speed
+        self.x, self.y = self.path[self.path_index]
+        self.name = name
+        self.shield = shield/100
+        self.type = type
+        self.direction = "f"
+        self.backtime = 0   
+
+    def move(self):
+        if self.path_index < len(self.path) - 1:
+            target_x, target_y = self.path[self.path_index + 1]
+            dx, dy = target_x - self.x, target_y - self.y
+            distance = (dx ** 2 + dy ** 2) ** 0.5
+
+            if distance != 0:
+                dx, dy = dx / distance, dy / distance
+                if self.direction == "b":
+                    self.x -= dx * self.speed
+                    self.y -= dy * self.speed
+                    self.backtime -= 1
+                    if self.backtime == 0:
+                        self.direction = "f"
+                else:
+                    self.x += dx * self.speed
+                    self.y += dy * self.speed                   
+
+                if abs(self.x - target_x) < self.speed and abs(self.y - target_y) < self.speed:
+                    self.path_index += 1
+            else:
+                self.path_index += 1
+        else:
+            return True
+        return False
+
+    def draw(self, screen):
+        pygame.draw.rect(screen, self.color, (self.x, self.y, 20, 20))
+        pygame.draw.rect(screen, BLACK, (self.x , self.y , 21, 21), 2)
+        health_bar_width = 60
+        health_ratio = self.health / self.max_health
+        pygame.draw.rect(screen, RED, (self.x - 10, self.y - 20, health_bar_width, 5))
+        pygame.draw.rect(screen, GREEN, (self.x - 10, self.y - 20, health_bar_width * health_ratio, 5))
+        font = pygame.font.Font(None, 18)
+        text = font.render(f"{int(self.health)}/{self.max_health} {self.name}", True, BLACK)
+        screen.blit(text, (self.x - 10, self.y - 35))
+
+
+
 
 # Define bullet class
 class Bullet:
@@ -837,10 +928,10 @@ class Bullet:
         if abs(self.x - self.target.x) < self.speed and abs(self.y - self.target.y) < self.speed:
             self.target.health -= round(self.damage - (self.damage * self.target.shield))
             if self.type == "confusion":
-                if self.target.path_index > 0 and self.target.path_index > self.power:
-                    self.target.path_index -= self.power
-                    if self.target.path_index <= -1:
-                        self.target.path_index = 0
+                self.target.backtime += (self.power*80 + round((35*self.power)/self.target.speed))
+                self.target.direction = "b"
+                if self.target.path_index <= -1:
+                    self.target.path_index = 0
                         
             elif self.type == "ice":
                 if self.target.speed > 0 and self.target.speed > self.power:
@@ -853,6 +944,68 @@ class Bullet:
     def draw(self, screen):
         pygame.draw.circle(screen, BLACK, (int(self.x), int(self.y)), 3)
 
+
+
+
+
+class Unit(Tower):
+    def __init__(self, path, max_health, speed, color, name, damage, range, firerate):
+        super().__init__(0, 0, range, damage, color, 0, 0)
+        self.shoot_interval = firerate
+        self.last_shot = 0
+        self.path = path
+        self.health = self.max_health = max_health
+        self.speed = speed
+        self.color = color
+        self.cash = cash
+        self.path_index = len(self.path) - 1
+        self.x, self.y = self.path[self.path_index]
+        self.name = name
+  
+
+    def move(self):
+        if self.path_index != 0:
+            target_x, target_y = self.path[self.path_index - 1]
+            dx, dy = target_x - self.x, target_y - self.y
+            distance = (dx ** 2 + dy ** 2) ** 0.5
+
+            if distance != 0:
+                dx, dy = dx / distance, dy / distance
+                self.x += dx * self.speed
+                self.y += dy * self.speed                   
+
+                if abs(self.x - target_x) < self.speed and abs(self.y - target_y) < self.speed:
+                    self.path_index -= 1
+            else:
+                self.path_index -= 1
+        else:
+            return True
+        return False
+
+    def draw(self, screen):
+        pygame.draw.rect(screen, self.color, (self.x, self.y, 20, 20))
+        pygame.draw.rect(screen, BLACK, (self.x , self.y , 21, 21), 2)
+        health_bar_width = 60
+        health_ratio = self.health / self.max_health
+        pygame.draw.rect(screen, RED, (self.x - 10, self.y - 20, health_bar_width, 5))
+        pygame.draw.rect(screen, GREEN, (self.x - 10, self.y - 20, health_bar_width * health_ratio, 5))
+        font = pygame.font.Font(None, 18)
+        text = font.render(f"{int(self.health)}/{self.max_health} {self.name}", True, BLACK)
+        screen.blit(text, (self.x - 10, self.y - 35))
+        pygame.draw.circle(screen, self.color, (self.x + 10, self.y + 10), self.range, 1)
+
+    def attack(self, enemies, bullets):
+        self.last_shot += 1
+        if self.last_shot >= self.shoot_interval:
+            self.last_shot = 0
+            shotfired = False
+            for enemy in enemies:
+                    if (enemy.x - self.x) ** 2 + (enemy.y - self.y) ** 2 <= self.range ** 2:
+                        bullets.append(GeneralBullet(self.x, self.y, enemy, self.damage, "normal"))
+                        shotfired = True
+                        break
+            return shotfired
+                    
 
 
 class GeneralBullet(Bullet):
@@ -882,6 +1035,7 @@ cash = 400
 towers = []
 enemies = []
 bullets = []
+units = []
 enemy_spawn_timer = 0
 selected_map = None
 selected_tower = None
@@ -891,8 +1045,9 @@ wave_started = False
 wave_timer = 0
 tower_selection = 1
 waves = []
+#units.append(Unit(map_paths[selected_map], 500, 1, RED, "Unit", 5, 250, 9))
 
-#            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0},
+#            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0},
 #blank wave template
 # Wave definitions
 def newwaves():
@@ -924,6 +1079,10 @@ def newwaves():
             {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 4, "rusher": 0, "healer": 1, "shielded": 0, "necro": 1, "titan": 0, "jester": 0}, #23
             {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 1, "jester": 1}, #24
             {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 20, "healer": 3, "shielded": 8, "necro": 3, "titan": 1, "jester": 2}, #25
+            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 3, "rusher": 20, "healer": 6, "shielded": 6, "necro": 1, "titan": 2, "jester": 2}, #26
+            {"normal": 5, "fast": 6, "heavy": 7, "boss": 3, "electro": 8, "giant": 4, "rusher": 9, "healer": 4, "shielded": 10, "necro": 2, "titan": 2, "jester": 2}, #27   
+
+
             # More waves can be added here
         ]
 
@@ -1102,8 +1261,8 @@ def shop_screen():
 
     pygame.display.flip()
 
-placelimits = {"1": 25, "2": 5, "3": 5, "4": 12, "5": 8, "6": 20, "7": 2, "8": 12}
-placed = {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6": 0, "7": 0, "8": 0}
+placelimits = {"1": 25, "2": 5, "3": 5, "4": 12, "5": 8, "6": 20, "7": 2, "8": 5, "9": 3}
+placed = {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6": 0, "7": 0, "8": 0, "9": 0}
 
 current_screen = "main"
 # Main game loop
@@ -1168,10 +1327,14 @@ while running:
                                 towers.append(Turret(x, y))
                                 placed["7"] += 1
                                 cash -= 4800
-                            elif tower_selection == 8 and cash >= 800:
+                            elif tower_selection == 8 and cash >= 1200:
                                 towers.append(Engineer(x, y, placed["8"]))
                                 placed["8"] += 1
-                                cash -= 800  
+                                cash -= 1200
+                            elif tower_selection == 9 and cash >= 3300:
+                                towers.append(MilBase(x, y))
+                                placed["9"] += 1
+                                cash -= 3300
                     else:
                         gui_x, gui_y = x, y
                         moving_ui = False
@@ -1197,26 +1360,37 @@ while running:
                     tower_selection = 7
                 elif event.key == pygame.K_8:
                     tower_selection = 8
+                elif event.key == pygame.K_9:
+                    tower_selection = 9
                 elif event.key == pygame.K_d:
                     for tower in towers:
                         tower.selected = False
                     towerselected = False
                 elif event.key == pygame.K_e:
-                    if lastupgradetime >= 15:
+                    if lastupgradetime >= 5:
                         for tower in towers:
                             if tower.selected:
                                 cash = tower.upgrade(cash)
                         lastupgradetime = 0
                 elif event.key == pygame.K_x:
                     for tower in towers:
-                        if tower.selected:
+                        if tower.selected and tower.special != "s":
                             cash += tower.sell
                             towers.remove(tower)
                             towerselected = False
                 elif event.key == pygame.K_m:
                     moving_ui = not moving_ui 
 
-                                
+                elif event.key == pygame.K_END:
+                    base_health = 0
+
+                elif event.key == pygame.K_F10 and devmode:
+                    cash += 1000
+                elif event.key == pygame.K_F9 and devmode:
+                    try:
+                        exec(input("Waiting for command... >"))
+                    except Exception as e:
+                        print(f"Error running: {e}")        
 
     if current_screen == "main":
         if selected_map is None:
@@ -1281,10 +1455,31 @@ while running:
                     else:
                         buff_time += 1
 
+            # Update units
+            for unit in units:
+                unit.attack(enemies, bullets)
+                if unit.move():
+                    units.remove(unit)
+                if unit.health <= 0:
+                    units.remove(unit)
+
+                for enemy in enemies:
+                    if abs(enemy.x - unit.x) <= 8 and abs(enemy.y - unit.y) <= 8:
+                        if enemy.health >= unit.health:
+                            enemy.health -= unit.health
+                            units.remove(unit)
+                            break
+                        else:
+                            ehp = enemy.health
+                            enemy.health -= unit.health
+                            unit.health -= ehp
+                                
+
 
             # Update towers
             for tower in towers:
-                tower.attack(enemies, bullets, )
+                tower.attack(enemies, bullets)
+
                 if tower.special == "s":
                     tower.tick()
                     if tower.time >= tower.max_time:
@@ -1320,6 +1515,10 @@ while running:
             for tower in towers:
                 tower.draw(screen)
 
+            # Draw units
+            for unit in units:
+                unit.draw(screen)
+
             # Draw enemies
             for enemy in enemies:
                 enemy.draw(screen)
@@ -1353,7 +1552,9 @@ while running:
             elif tower_selection == 7:
                 text = font.render("Selected Tower: Turret (4800 cash)", True, BLACK)
             elif tower_selection == 8:
-                text = font.render("Selected Tower: Engineer (800 cash)", True, BLACK)
+                text = font.render("Selected Tower: Engineer (1200 cash)", True, BLACK)
+            elif tower_selection == 9:
+                text = text = font.render("Selected Tower: Military Base (3300 cash)", True, BLACK)
             screen.blit(text, (200, 10))
 
             # upgrades
