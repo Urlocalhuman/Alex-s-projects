@@ -2,7 +2,7 @@ import time
 import random
 import subprocess
 import sys
-
+import threading
 
 def checkmodules():
     required_modules = ['pygame']
@@ -14,38 +14,7 @@ def checkmodules():
 checkmodules()
 import pygame
 
-print("Alex's tower defence")
-time.sleep(1)
-print("version v0.7r")
-gamemode = "normal"
-speed = 10
-enemy_spawn_time = 20
-heal_time = 0
-spawn_time = 0
-buff_time = 0
-lastupgradetime = 0
-towerselected = False
-moving_ui = False
-gui_x = 50
-gui_y = 120
-devmode = False
 
-
-
-while True:
-    do = input("start or help? (s/h)").lower()
-    if do == "s":
-        break
-    elif do == "h":
-        print("Use keys 1-9 to switch between towers. ")
-        print("Click to place a tower. ")
-        print("Click on a tower to select it and view its upgrades. ")
-        print("Use 'u' to upgrade a selected tower, and use 'x' to sell it. ")
-        print("Use 'd' to deselect a tower. ")
-        print("Use 'm' to move the upgrade gui")
-    elif do == "d":
-        print("Devmode enabled. IMPORTANT: PROGRESS WILL NOT BE SAVED IN DEVMODE! ")
-        devmode = True
 
 # Initialize Pygame
 pygame.init()
@@ -74,12 +43,7 @@ VERYDARKGRAY = (64, 64, 64)
 BURPLE = (82, 0, 163)
 STINKYBROWN = (173, 38, 0)
 
-# Initialize screen
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Alex's tower defense")
 
-# Clock for controlling frame rate
-clock = pygame.time.Clock()
 
 
 
@@ -106,7 +70,7 @@ class Tower:
         if self.selected:
             pygame.draw.rect(screen, RED, (self.x - 15, self.y - 15, 30, 30), 2)
             pygame.draw.circle(screen, self.color, (self.x, self.y), self.range, 1)
-    def attack(self, enemies, bullets):
+    def attack(self, enemies, bullets, extra=""):
         pass
 
     def getupgrades(self):
@@ -125,7 +89,7 @@ class Shooter(Tower):
         self.shoot_interval = 10
         self.last_shot = 0
 
-    def attack(self, enemies, bullets):
+    def attack(self, enemies, bullets, extra=""):
         self.last_shot += 1
         if self.last_shot >= self.shoot_interval:
             self.last_shot = 0
@@ -134,7 +98,7 @@ class Shooter(Tower):
                         bullets.append(GeneralBullet(self.x, self.y, enemy, self.damage, "normal"))
                         break   
     
-    def getupgrades(self, gui_x, gui_y):
+    def getupgrades(self, gui_x, gui_y, screen):
         self.font = pygame.font.Font(None, 25)
         self.towername = self.font.render(f"Shooter (level {self.level})", True, BLACK)
         screen.blit(self.towername, (gui_x+5, gui_y+5))
@@ -192,7 +156,7 @@ class Archer(Tower):
         self.shoot_interval = 100
         self.last_shot = 0
 
-    def attack(self, enemies, bullets):
+    def attack(self, enemies, bullets, extra=""):
         self.last_shot += 1
         if self.last_shot >= self.shoot_interval:
             self.last_shot = 0
@@ -200,7 +164,7 @@ class Archer(Tower):
                     if (enemy.x - self.x) ** 2 + (enemy.y - self.y) ** 2 <= self.range ** 2:
                         bullets.append(GeneralBullet(self.x, self.y, enemy, self.damage, "normal"))
                         break     
-    def getupgrades(self, gui_x, gui_y):
+    def getupgrades(self, gui_x, gui_y, screen):
         self.font = pygame.font.Font(None, 25)
         self.towername = self.font.render(f"Archer (level {self.level})", True, BLACK)
         screen.blit(self.towername, (gui_x+5, gui_y+5))
@@ -266,7 +230,7 @@ class Rifleman(Tower):
         self.shoot_interval = 4
         self.last_shot = 0
 
-    def attack(self, enemies, bullets):
+    def attack(self, enemies, bullets, extra=""):
         self.last_shot += 1
         if self.last_shot >= self.shoot_interval:
             self.last_shot = 0
@@ -275,7 +239,7 @@ class Rifleman(Tower):
                         bullets.append(GeneralBullet(self.x, self.y, enemy, self.damage, "normal"))
                         break
 
-    def getupgrades(self, gui_x, gui_y):
+    def getupgrades(self, gui_x, gui_y, screen):
         self.font = pygame.font.Font(None, 25)
         self.towername = self.font.render(f"Rifleman (level {self.level})", True, BLACK)
         screen.blit(self.towername, (gui_x+5, gui_y+5))
@@ -338,7 +302,7 @@ class Swordsman(Tower):
         self.shoot_interval = 10
         self.last_shot = 0
 
-    def attack(self, enemies, bullets):
+    def attack(self, enemies, bullets, extra=""):
         self.last_shot += 1
         if self.last_shot >= self.shoot_interval:
             self.last_shot = 0
@@ -347,7 +311,7 @@ class Swordsman(Tower):
                         bullets.append(MeleeAttack(self.x, self.y, enemy, self.damage, "normal"))
                         break
 
-    def getupgrades(self, gui_x, gui_y):
+    def getupgrades(self, gui_x, gui_y, screen):
         self.font = pygame.font.Font(None, 25)
         self.towername = self.font.render(f"Swordsman (level {self.level})", True, BLACK)
         screen.blit(self.towername, (gui_x+5, gui_y+5))
@@ -402,7 +366,7 @@ class Turret(Tower):
         self.shoot_interval = 2
         self.last_shot = 0
 
-    def attack(self, enemies, bullets):
+    def attack(self, enemies, bullets, extra=""):
         self.last_shot += 1
         if self.last_shot >= self.shoot_interval:
             self.last_shot = 0
@@ -411,7 +375,7 @@ class Turret(Tower):
                         bullets.append(GeneralBullet(self.x, self.y, enemy, self.damage, "normal"))
                         break
 
-    def getupgrades(self, gui_x, gui_y):
+    def getupgrades(self, gui_x, gui_y, screen):
         self.font = pygame.font.Font(None, 25)
         self.towername = self.font.render(f"Turret (level {self.level})", True, BLACK)
         screen.blit(self.towername, (gui_x+5, gui_y+5))
@@ -487,7 +451,7 @@ class IceBlaster(Tower):
         self.last_shot = 0
         self.power = 1
 
-    def attack(self, enemies, bullets):
+    def attack(self, enemies, bullets, extra=""):
         self.last_shot += 1
         if self.last_shot >= self.shoot_interval:
             self.last_shot = 0
@@ -496,7 +460,7 @@ class IceBlaster(Tower):
                         bullets.append(GeneralBullet(self.x, self.y, enemy, self.damage, "ice", self.power))
                         break
 
-    def getupgrades(self, gui_x, gui_y):
+    def getupgrades(self, gui_x, gui_y, screen):
         self.font = pygame.font.Font(None, 25)
         self.towername = self.font.render(f"Ice Blaster (level {self.level})", True, BLACK)
         screen.blit(self.towername, (gui_x+5, gui_y+5))
@@ -558,7 +522,7 @@ class CBomber(Tower):
                         bullets.append(GeneralBullet(self.x, self.y, enemy, self.damage, "confusion", self.power))
                         break
 
-    def getupgrades(self, gui_x, gui_y):
+    def getupgrades(self, gui_x, gui_y, screen):
         self.font = pygame.font.Font(None, 25)
         self.towername = self.font.render(f"Confusion bomber (level {self.level})", True, BLACK)
         screen.blit(self.towername, (gui_x+5, gui_y+5))
@@ -655,7 +619,7 @@ class Sentry(Tower):
                         bullets.append(GeneralBullet(self.x, self.y, enemy, self.damage, "normal"))
                         break   
     
-    def getupgrades(self, gui_x, gui_y):
+    def getupgrades(self, gui_x, gui_y, screen):
         self.font = pygame.font.Font(None, 25)
         self.towername = self.font.render(f"Sentry (level {self.lv}) from id {self.slot}", True, BLACK)
         screen.blit(self.towername, (gui_x+5, gui_y+5))
@@ -693,7 +657,7 @@ class Engineer(Tower):
                         break
                     
 
-    def getupgrades(self, gui_x, gui_y):
+    def getupgrades(self, gui_x, gui_y, screen):
         self.font = pygame.font.Font(None, 25)
         self.towername = self.font.render(f"Engineer {self.slot} (level {self.level})", True, BLACK)
         screen.blit(self.towername, (gui_x+5, gui_y+5))
@@ -780,7 +744,14 @@ class MilBase(Tower):
         self.lastsummon = 0
         self.summontime = 800
         self.unitlevel = 0
-    def attack(self, enemies, bullets):
+        self.secondsummontime = 0
+        self.doublesummon = False
+        self.ondoublesummon = False
+
+    def attack(self, enemies, bullets, extra=[]):
+        units=extra[0]
+        map_paths = extra[1]
+        selected_map = [extra[2]]
         if self.lastsummon >= self.summontime:
             if self.unitlevel == 0:
                 units.append(Unit(map_paths[selected_map], 20, 3, DARKGRAY, "Jeep lv0", 0, 20, 100))
@@ -789,12 +760,28 @@ class MilBase(Tower):
             elif self.unitlevel == 2:
                 units.append(Unit(map_paths[selected_map], 120, 3, DARKGRAY, "Jeep lv2", 5, 200, 11))
             elif self.unitlevel == 3:
-                units.append(Unit(map_paths[selected_map], 300, 2, STINKYBROWN, "Tank", 45, 220, 14))
+                units.append(Unit(map_paths[selected_map], 1400, 2, STINKYBROWN, "Tank", 60, 220, 14))
+            elif self.unitlevel == 4:
+                units.append(Unit(map_paths[selected_map], 1600, 1, GRAY, "War machine tank", 7, 220, 3))               
             self.lastsummon = 0
+            if self.doublesummon:
+                self.ondoublesummon = True
         else:
             self.lastsummon += 1
+
+        if self.ondoublesummon and self.secondsummontime == 30:
+            if self.unitlevel == 3:
+                units.append(Unit(map_paths[selected_map], 1400, 2, STINKYBROWN, "Tank", 60, 220, 14))
+            elif self.unitlevel == 4:
+                units.append(Unit(map_paths[selected_map], 1600, 1, GRAY, "War machine tank", 7, 220, 3)) 
+            self.ondoublesummon = False
+            self.secondsummontime = 0
+        elif self.ondoublesummon:
+            self.secondsummontime += 1
+
+        return units           
     
-    def getupgrades(self, gui_x, gui_y):
+    def getupgrades(self, gui_x, gui_y, screen):
         self.font = pygame.font.Font(None, 25)
         self.towername = self.font.render(f"Military Base (level {self.level})", True, BLACK)
         screen.blit(self.towername, (gui_x+5, gui_y+5))
@@ -808,8 +795,11 @@ class MilBase(Tower):
         elif self.level == 3:
             self.text = ["Cost: 4000", "Unlocks tanks", f"Summoning time: {self.lastsummon}/{self.summontime}"]
         elif self.level == 4:
-            self.text = ["MAX LEVEL", "Sell: 3000", f"Summoning time: {self.lastsummon}/{self.summontime}"]        
-
+            self.text = ["Cost: 2000", "Double summons", f"Summoning time: {self.lastsummon}/{self.summontime}"]           
+        elif self.level == 5:
+            self.text = ["Cost: 9000", "Unlocks war machine tanks", f"Summoning time: {self.lastsummon}/{self.summontime}"]
+        elif self.level == 6:        
+            self.text = ["MAX LEVEL", "Sell: 3000", f"Summoning time: {self.lastsummon}/{self.summontime}"]
         for i in range(len(self.text)):
             screen.blit(self.font.render(self.text[i] ,True, BLACK), (gui_x+5, (gui_y+25)+(20*i)))
     
@@ -845,8 +835,24 @@ class MilBase(Tower):
                 self.level += 1
                 self.unitlevel = 3
                 self.cost = 0
+                self.summontime = 2600
                 self.sell = 3000 
 
+        elif self.level == 4:
+            if cash >= self.cost:
+                cash -= self.cost
+                self.level += 1
+                self.doublesummon = True
+                self.cost = 9000
+                self.sell = 3000 
+
+        elif self.level == 5:
+            if cash >= self.cost:
+                cash -= self.cost
+                self.level += 1
+                self.unitlevel = 4
+                self.cost = 0
+                self.sell = 3000 
         return cash  
 
 # Define enemy class
@@ -913,7 +919,7 @@ class Bullet:
         self.y = y
         self.target = target
         self.damage = damage
-        self.speed = speed
+        self.speed = 5
         self.type = type
         self.power = power
 
@@ -957,7 +963,6 @@ class Unit(Tower):
         self.health = self.max_health = max_health
         self.speed = speed
         self.color = color
-        self.cash = cash
         self.path_index = len(self.path) - 1
         self.x, self.y = self.path[self.path_index]
         self.name = name
@@ -994,7 +999,7 @@ class Unit(Tower):
         screen.blit(text, (self.x - 10, self.y - 35))
         pygame.draw.circle(screen, self.color, (self.x + 10, self.y + 10), self.range, 1)
 
-    def attack(self, enemies, bullets):
+    def attack(self, enemies, bullets, extra=""):
         self.last_shot += 1
         if self.last_shot >= self.shoot_interval:
             self.last_shot = 0
@@ -1011,7 +1016,7 @@ class Unit(Tower):
 class GeneralBullet(Bullet):
     def __init__(self, x, y, target, damage, type, power=1):
         super().__init__(x, y, target, damage, type, power)
-        self.speed = speed + 5
+        self.speed = 5 + 5
 
     def draw(self, screen):
         pygame.draw.circle(screen, BLACK, (int(self.x), int(self.y)), 3)
@@ -1019,198 +1024,18 @@ class GeneralBullet(Bullet):
 class MeleeAttack(Bullet):
     def __init__(self, x, y, target, damage, type):
         super().__init__(x, y, target, damage, type)
-        self.speed = speed + 10
+        self.speed = 5 + 10
 
     def draw(self, screen):
         pygame.draw.circle(screen, BROWN, (int(self.x), int(self.y)), 5)
 
-# Define paths for maps
-map_paths = [
-    [(0, 300), (200, 300), (200, 100), (700, 100), (700, 500), (200, 500), (200, 300), (400, 300), (750, 200), (750, 400), (700, 400), (400, 400), (400, 150), (800, 150)],
-    [(0, 300), (800, 400)]
-]
-
-# Game variables
-cash = 400
-towers = []
-enemies = []
-bullets = []
-units = []
-enemy_spawn_timer = 0
-selected_map = None
-selected_tower = None
-base_health = 200
-current_wave = 0
-wave_started = False
-wave_timer = 0
-tower_selection = 1
-waves = []
-#units.append(Unit(map_paths[selected_map], 500, 1, RED, "Unit", 5, 250, 9))
-
-#            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0},
-#blank wave template
-# Wave definitions
-def newwaves():
-    global gamemode, waves
-    if gamemode == "normal":
-        waves = [
-            {"normal": 3, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #1
-            {"normal": 5, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #2
-            {"normal": 6, "fast": 2, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #3
-            {"normal": 12, "fast": 8, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #4
-            {"normal": 3, "fast": 0, "heavy": 6, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #5
-            {"normal": 8, "fast": 5, "heavy": 3, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #6
-            {"normal": 4, "fast": 3, "heavy": 6, "boss": 1, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #7
-            {"normal": 0, "fast": 22, "heavy": 8, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #8
-            {"normal": 0, "fast": 10, "heavy": 0, "boss": 2, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #9
-            {"normal": 16, "fast": 12, "heavy": 20, "boss": 1, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #10
-            {"normal": 0, "fast": 40, "heavy": 0, "boss": 4, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #11
-            {"normal": 12, "fast": 8, "heavy": 18, "boss": 1, "electro": 4, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #12
-            {"normal": 0, "fast": 10, "heavy": 0, "boss": 12, "electro": 8, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #13
-            {"normal": 0, "fast": 0, "heavy": 0, "boss": 2, "electro": 4, "giant": 1, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #14
-            {"normal": 0, "fast": 10, "heavy": 0, "boss": 0, "electro": 20, "giant": 0, "rusher": 5, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #15
-            {"normal": 0, "fast": 0, "heavy": 15, "boss": 20, "electro": 0, "giant": 2, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #16
-            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 3, "rusher": 7, "healer": 1, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #17
-            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 10, "giant": 4, "rusher": 0, "healer": 1, "shielded": 2, "necro": 0, "titan": 0, "jester": 0}, #18   
-            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 10, "rusher": 0, "healer": 1, "shielded": 8, "necro": 0, "titan": 0, "jester": 0}, #19
-            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 10, "giant": 0, "rusher": 10, "healer": 1, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #20
-            {"normal": 8, "fast": 4, "heavy": 10, "boss": 2, "electro": 6, "giant": 2, "rusher": 12, "healer": 0, "shielded": 4, "necro": 0, "titan": 0, "jester": 0}, #21
-            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 22, "healer": 2, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #22
-            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 4, "rusher": 0, "healer": 1, "shielded": 0, "necro": 1, "titan": 0, "jester": 0}, #23
-            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 1, "jester": 1}, #24
-            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 20, "healer": 3, "shielded": 8, "necro": 3, "titan": 1, "jester": 2}, #25
-            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 3, "rusher": 20, "healer": 6, "shielded": 6, "necro": 1, "titan": 2, "jester": 2}, #26
-            {"normal": 5, "fast": 6, "heavy": 7, "boss": 3, "electro": 8, "giant": 4, "rusher": 9, "healer": 4, "shielded": 10, "necro": 2, "titan": 2, "jester": 2}, #27   
-
-
-            # More waves can be added here
-        ]
-
-#i nearly forgot to call the newwaves function lol
-newwaves()
-
-
-def main_screen():
-    screen.fill(WHITE)
-    font = pygame.font.Font(None, 74)
-    text = font.render("Select a Map", True, BLACK)
-    screen.blit(text, (250, 50))
-
-    font = pygame.font.Font(None, 36)
-    
-    # Map 1 button
-    text1 = font.render("1", True, BLACK)
-    pygame.draw.rect(screen, GREEN, (150, 200, 200, 200))
-    screen.blit(text1, (250, 300))
-    
-    # Map 2 button
-    text2 = font.render("2", True, BLACK)
-    pygame.draw.rect(screen, BLUE, (450, 200, 200, 200))
-    screen.blit(text2, (550, 300))
-
-    # Shop button
-    text_shop = font.render("Shop", True, BLACK)
-    pygame.draw.rect(screen, RED, (300, 450, 200, 50))
-    screen.blit(text_shop, (370, 460))
-
-    #Save button
-    text_save = font.render("Save", True, BLACK)
-    pygame.draw.rect(screen, GRAY, (100, 100, 100, 100))
-    screen.blit(text_save, (370, 460))
-
-    pygame.display.flip()
-
-def draw_path(map_index):
-    screen.fill(GRAY)
-    path = map_paths[map_index]
-    for i in range(len(path) - 1):
-        pygame.draw.line(screen, BLACK, path[i], path[i + 1], 5)
-
-def start_wave():
-    global wave_started, enemy_spawn_timer, current_wave
-    wave_started = True
-    enemy_spawn_timer = 0
-    current_wave += 1
-
-def spawn_enemies():
-    global wave_started, cash, enemy_spawn_timer
-    if current_wave > len(waves):
-        wave_started = False
-        return
-
-    wave = waves[current_wave - 1]       
-    if gamemode == "normal":
-        if wave["normal"] > 0:
-            enemies.append(Enemy(map_paths[selected_map], 4, 4, GREEN, 2, "Normal", 0, "n"))
-            wave["normal"] -= 1
-        if wave["normal"] == 0:
-            if wave["fast"] > 0:
-                enemies.append(Enemy(map_paths[selected_map], 3, 6, LIGHTBLUE, 5, "Fast", 0, "n"))
-                wave["fast"] -= 1
-
-            if wave["fast"] == 0:
-                if wave["heavy"] > 0:
-                    enemies.append(Enemy(map_paths[selected_map], 12, 3, GBROWN, 15, "Heavy", 10, "n"))
-                    wave["heavy"] -= 1
-
-                if wave["heavy"] == 0:
-                    if wave["boss"] > 0:
-                        enemies.append(Enemy(map_paths[selected_map], 140, 2, DGREEN, 60, "Easy Boss", 0, "n"))
-                        wave["boss"] -= 1
-
-                    if wave["boss"] == 0:
-                        if wave["electro"] > 0:
-                            enemies.append(Enemy(map_paths[selected_map], 60, 8, YELLOW, 40, "Electro", 0, "n"))
-                            wave["electro"] -= 1
-
-                        if wave["electro"] == 0:
-                            if wave["giant"] > 0:
-                                enemies.append(Enemy(map_paths[selected_map], 1750, 1, DARKGRAY, 250, "Giant Boss", 20, "n"))
-                                wave["giant"] -= 1
-                                        
-                            if wave["giant"] == 0:
-                                if wave["rusher"] > 0:
-                                    enemies.append(Enemy(map_paths[selected_map], 250, 7, RED, 80, "Rusher", 0, "n"))
-                                    wave["rusher"] -= 1
-                                
-                                if wave["giant"] == 0:
-                                    if wave["healer"] > 0:
-                                        enemies.append(Enemy(map_paths[selected_map], 850, 2, PINK, 100, "Healer", 15, "h"))
-                                        wave["healer"] -= 1
-
-                                    if wave["healer"] == 0:
-                                        if wave["shielded"] > 0:
-                                            enemies.append(Enemy(map_paths[selected_map], 400, 3, GRAY, 120, "Shielded", 60, "n"))
-                                            wave["shielded"] -= 1
-
-                                        if wave["shielded"] == 0:
-                                            if wave["necro"] > 0:
-                                                enemies.append(Enemy(map_paths[selected_map], 1500, 3, VERYDARKGRAY, 125, "Necromancer", 25, "s"))
-                                                wave["necro"] -= 1
-
-                                            if wave["necro"] == 0:
-                                                if wave["titan"] > 0:
-                                                    enemies.append(Enemy(map_paths[selected_map], 17500, 2, BURPLE, 500, "Titan Boss", 50, "n"))
-                                                    wave["titan"] -= 1
-
-                                                if wave["titan"] == 0:
-                                                    if wave["jester"] > 0:
-                                                        enemies.append(Enemy(map_paths[selected_map], 4000, 3, PURPLE, 225, "Jester", 20, "j"))
-                                                        wave["jester"] -= 1                                                 
-    if len(enemies) == 0:
-        wave_started = False
-        cash += (50 + (current_wave * 25))
-        if current_wave <= 8:
-            enemy_spawn_timer = 20
-        elif current_wave == 9:
-            enemy_spawn_timer = 10
-        elif current_wave >= 14:
-            enemy_spawn_timer = 5
 
 
 
 
-def main_screen():
+
+
+def main_screen(screen):
     screen.fill(WHITE)
     font = pygame.font.Font(None, 74)
     text = font.render("Select a Map", True, BLACK)
@@ -1243,7 +1068,7 @@ def main_screen():
     return save_button_rect
 
 
-def shop_screen():
+def shop_screen(screen):
     screen.fill(WHITE)
     font = pygame.font.Font(None, 74)
     text = font.render("Shop", True, BLACK)
@@ -1261,233 +1086,283 @@ def shop_screen():
 
     pygame.display.flip()
 
-placelimits = {"1": 25, "2": 5, "3": 5, "4": 12, "5": 8, "6": 20, "7": 2, "8": 5, "9": 3}
-placed = {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6": 0, "7": 0, "8": 0, "9": 0}
+class main:
+    def __init__(self):
+        print("Alex's tower defence")
+        time.sleep(1)
+        print("version v0.8rBROKEN")
+        self.gamemode = "normal"
+        self.speed = 10
+        self.enemy_spawn_time = 20
+        self.heal_time = 0
+        self.spawn_time = 0
+        self.buff_time = 0
+        self.lastupgradetime = 0
+        self.towerselected = False
+        self.moving_ui = False
+        self.gui_x = 50
+        self.gui_y = 120
+        self.devmode = False
 
-current_screen = "main"
-# Main game loop
-running = True
-while running:
-    screen.fill(WHITE)
 
-    # Event handling
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            x, y = event.pos
 
-            if current_screen == "main":
-                if selected_map is None:
-                    if 150 <= x <= 350 and 200 <= y <= 400:
-                        selected_map = 0
-                    elif 450 <= x <= 650 and 200 <= y <= 400:
-                        selected_map = 1
-                        cash = 800
-                        enemy_spawn_timer = 15
-                    elif 300 <= x <= 500 and 450 <= y <= 500:
-                        current_screen = "shop"
-                else:
-                    if not moving_ui:
-                        for tower in towers:
-                            if tower.x - 15 <= x <= tower.x + 15 and tower.y - 15 <= y <= tower.y + 15:
-                                for thing in towers:
-                                    if thing.selected:
-                                        thing.selected = False
-                                tower.selected = True
-                                towerselected = True
-                                break
+        while True:
+            do = input("start or help? (s/h)").lower()
+            if do == "s":
+                break
+            elif do == "h":
+                print("Use keys 1-9 to switch between towers. ")
+                print("Click to place a tower. ")
+                print("Click on a tower to select it and view its upgrades. ")
+                print("Use 'u' to upgrade a selected tower, and use 'x' to sell it. ")
+                print("Use 'd' to deselect a tower. ")
+                print("Use 'm' to move the upgrade gui")
+            elif do == "d":
+                print("Devmode enabled. IMPORTANT: PROGRESS WILL NOT BE SAVED IN DEVMODE! ")
+                self.devmode = True
+        # Initialize screen
+        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        pygame.display.set_caption("Alex's tower defense")
 
-                        if placed[f"{tower_selection}"] < placelimits[f"{tower_selection}"] and towerselected == False:
-                            if tower_selection == 1 and cash >= 175:
-                                towers.append(Shooter(x, y))
-                                placed["1"] += 1
-                                cash -= 175
-                            if tower_selection == 2 and cash >= 2500:
-                                towers.append(CBomber(x, y))
-                                placed["2"] += 1
-                                cash -= 2500    
-                            elif tower_selection == 3 and cash >= 1500:
-                                towers.append(IceBlaster(x, y))
-                                placed["3"] += 1
-                                cash -= 1500    
-                            elif tower_selection == 4 and cash >= 500:
-                                towers.append(Archer(x, y))
-                                placed["4"] += 1
-                                cash -= 500
-                            elif tower_selection == 5 and cash >= 1100:
-                                towers.append(Rifleman(x, y))
-                                placed["5"] += 1
-                                cash -= 1100
-                            elif tower_selection == 6 and cash >= 1100:
-                                towers.append(Swordsman(x, y))
-                                placed["6"] += 1
-                                cash -= 1100
-                            elif tower_selection == 7 and cash >= 4800:
-                                towers.append(Turret(x, y))
-                                placed["7"] += 1
-                                cash -= 4800
-                            elif tower_selection == 8 and cash >= 1200:
-                                towers.append(Engineer(x, y, placed["8"]))
-                                placed["8"] += 1
-                                cash -= 1200
-                            elif tower_selection == 9 and cash >= 3300:
-                                towers.append(MilBase(x, y))
-                                placed["9"] += 1
-                                cash -= 3300
-                    else:
-                        gui_x, gui_y = x, y
-                        moving_ui = False
-            elif current_screen == "shop":
-                if 700 <= x <= 780 and 10 <= y <= 50:  # Back button
-                    current_screen = "main"
+        # Clock for controlling frame rate
+        self.clock = pygame.time.Clock()
+        self.placelimits = {"1": 25, "2": 5, "3": 5, "4": 12, "5": 8, "6": 20, "7": 2, "8": 5, "9": 3}
+        self.placed = {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6": 0, "7": 0, "8": 0, "9": 0}
+        # Game variables
+        self.cash = 400
+        self.towers = []
+        self.enemies = []
+        self.bullets = []
+        self.units = []
+        self.enemy_spawn_timer = 0
+        self.selected_map = None
+        self.selected_tower = None
+        self.base_health = 200
+        self.current_wave = 0
+        self.wave_started = False
+        self.wave_timer = 0
+        self.tower_selection = 1
+        self.running = True
+        self.waves = []
+        # Define paths for maps
+        self.map_paths = [
+            [(0, 300), (200, 300), (200, 100), (700, 100), (700, 500), (200, 500), (200, 300), (400, 300), (750, 200), (750, 400), (700, 400), (400, 400), (400, 150), (800, 150)],
+            [(0, 300), (800, 400)]
+        ]
 
-        elif event.type == pygame.KEYDOWN:
-            if current_screen == "main":
-                if event.key == pygame.K_1:
-                    tower_selection = 1
-                elif event.key == pygame.K_2:
-                    tower_selection = 2
-                elif event.key == pygame.K_3:
-                    tower_selection = 3
-                elif event.key == pygame.K_4:
-                    tower_selection = 4
-                elif event.key == pygame.K_5:
-                    tower_selection = 5
-                elif event.key == pygame.K_6:
-                    tower_selection = 6
-                elif event.key == pygame.K_7:
-                    tower_selection = 7
-                elif event.key == pygame.K_8:
-                    tower_selection = 8
-                elif event.key == pygame.K_9:
-                    tower_selection = 9
-                elif event.key == pygame.K_d:
-                    for tower in towers:
-                        tower.selected = False
-                    towerselected = False
-                elif event.key == pygame.K_e:
-                    if lastupgradetime >= 5:
-                        for tower in towers:
-                            if tower.selected:
-                                cash = tower.upgrade(cash)
-                        lastupgradetime = 0
-                elif event.key == pygame.K_x:
-                    for tower in towers:
-                        if tower.selected and tower.special != "s":
-                            cash += tower.sell
-                            towers.remove(tower)
-                            towerselected = False
-                elif event.key == pygame.K_m:
-                    moving_ui = not moving_ui 
 
-                elif event.key == pygame.K_END:
-                    base_health = 0
 
-                elif event.key == pygame.K_F10 and devmode:
-                    cash += 1000
-                elif event.key == pygame.K_F9 and devmode:
-                    try:
-                        exec(input("Waiting for command... >"))
-                    except Exception as e:
-                        print(f"Error running: {e}")        
+    def draw_path(self, map_index):
+        self.screen.fill(GRAY)
+        path = self.map_paths[map_index]
+        for i in range(len(path) - 1):
+            pygame.draw.line(self.screen, BLACK, path[i], path[i + 1], 5)
 
-    if current_screen == "main":
-        if selected_map is None:
-            save_button_rect = main_screen()
-        else:
-            draw_path(selected_map)
+    def start_wave(self):
+        self.wave_started = True
+        self.enemy_spawn_timer = 0
+        self.current_wave += 1
 
-            # Manage waves
-            if not wave_started:
-                wave_timer += 1
-                if wave_timer > 120:
-                    start_wave()
-                    wave_timer = 0
-            else:
-                enemy_spawn_timer += 1
-                if enemy_spawn_timer > enemy_spawn_time:
-                    spawn_enemies()
-                    enemy_spawn_timer = 0
+    #units.append(Unit(map_paths[selected_map], 500, 1, RED, "Unit", 5, 250, 9))
 
+    #            {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0},
+    #blank wave template
+    # Wave definitions
+    def newwaves(self):
+        if self.gamemode == "normal":
+            self.waves = [
+                {"normal": 3, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #1
+                {"normal": 5, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #2
+                {"normal": 6, "fast": 2, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #3
+                {"normal": 12, "fast": 8, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #4
+                {"normal": 3, "fast": 0, "heavy": 6, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #5
+                {"normal": 8, "fast": 5, "heavy": 3, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #6
+                {"normal": 4, "fast": 3, "heavy": 6, "boss": 1, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #7
+                {"normal": 0, "fast": 22, "heavy": 8, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #8
+                {"normal": 0, "fast": 10, "heavy": 0, "boss": 2, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #9
+                {"normal": 16, "fast": 12, "heavy": 20, "boss": 1, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #10
+                {"normal": 0, "fast": 40, "heavy": 0, "boss": 4, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #11
+                {"normal": 12, "fast": 8, "heavy": 18, "boss": 1, "electro": 4, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #12
+                {"normal": 0, "fast": 10, "heavy": 0, "boss": 12, "electro": 8, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #13
+                {"normal": 0, "fast": 0, "heavy": 0, "boss": 2, "electro": 4, "giant": 1, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #14
+                {"normal": 0, "fast": 10, "heavy": 0, "boss": 0, "electro": 20, "giant": 0, "rusher": 5, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #15
+                {"normal": 0, "fast": 0, "heavy": 15, "boss": 20, "electro": 0, "giant": 2, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #16
+                {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 3, "rusher": 7, "healer": 1, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #17
+                {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 10, "giant": 4, "rusher": 0, "healer": 1, "shielded": 2, "necro": 0, "titan": 0, "jester": 0}, #18   
+                {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 10, "rusher": 0, "healer": 1, "shielded": 8, "necro": 0, "titan": 0, "jester": 0}, #19
+                {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 10, "giant": 0, "rusher": 10, "healer": 1, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #20
+                {"normal": 8, "fast": 4, "heavy": 10, "boss": 2, "electro": 6, "giant": 2, "rusher": 12, "healer": 0, "shielded": 4, "necro": 0, "titan": 0, "jester": 0}, #21
+                {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 22, "healer": 2, "shielded": 0, "necro": 0, "titan": 0, "jester": 0}, #22
+                {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 4, "rusher": 0, "healer": 1, "shielded": 0, "necro": 1, "titan": 0, "jester": 0}, #23
+                {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 0, "healer": 0, "shielded": 0, "necro": 0, "titan": 1, "jester": 1}, #24
+                {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 0, "rusher": 20, "healer": 3, "shielded": 8, "necro": 3, "titan": 1, "jester": 2}, #25
+                {"normal": 0, "fast": 0, "heavy": 0, "boss": 0, "electro": 0, "giant": 3, "rusher": 20, "healer": 6, "shielded": 6, "necro": 1, "titan": 2, "jester": 2}, #26
+                {"normal": 5, "fast": 6, "heavy": 7, "boss": 3, "electro": 8, "giant": 4, "rusher": 9, "healer": 4, "shielded": 10, "necro": 2, "titan": 2, "jester": 2}, #27   
+
+
+                # More waves can be added here
+            ]
+
+
+    def spawn_enemies(self):
+        if self.current_wave > len(self.waves):
+            self.wave_started = False
+            return
+
+        self.wave = self.waves[self.current_wave - 1]       
+        if self.gamemode == "normal":
+            if self.wave["normal"] > 0:
+                self.enemies.append(Enemy(self.map_paths[self.selected_map], 4, 4, GREEN, 2, "Normal", 0, "n"))
+                self.wave["normal"] -= 1
+            if self.wave["normal"] == 0:
+                if self.wave["fast"] > 0:
+                    self.enemies.append(Enemy(self.map_paths[self.selected_map], 3, 6, LIGHTBLUE, 5, "Fast", 0, "n"))
+                    self.wave["fast"] -= 1
+
+                if self.wave["fast"] == 0:
+                    if self.wave["heavy"] > 0:
+                        self.enemies.append(Enemy(self.map_paths[self.selected_map], 12, 3, GBROWN, 15, "Heavy", 10, "n"))
+                        self.wave["heavy"] -= 1
+
+                    if self.wave["heavy"] == 0:
+                        if self.wave["boss"] > 0:
+                            self.enemies.append(Enemy(self.map_paths[self.selected_map], 140, 2, DGREEN, 60, "Easy Boss", 0, "n"))
+                            self.wave["boss"] -= 1
+
+                        if self.wave["boss"] == 0:
+                            if self.wave["electro"] > 0:
+                                self.enemies.append(Enemy(self.map_paths[self.selected_map], 60, 8, YELLOW, 40, "Electro", 0, "n"))
+                                self.wave["electro"] -= 1
+
+                            if self.wave["electro"] == 0:
+                                if self.wave["giant"] > 0:
+                                    self.enemies.append(Enemy(self.map_paths[self.selected_map], 1750, 1, DARKGRAY, 250, "Giant Boss", 20, "n"))
+                                    self.wave["giant"] -= 1
+                                            
+                                if self.wave["giant"] == 0:
+                                    if self.wave["rusher"] > 0:
+                                        self.enemies.append(Enemy(self.map_paths[self.selected_map], 250, 7, RED, 80, "Rusher", 0, "n"))
+                                        self.wave["rusher"] -= 1
+                                    
+                                    if self.wave["giant"] == 0:
+                                        if self.wave["healer"] > 0:
+                                            self.enemies.append(Enemy(self.map_paths[self.selected_map], 850, 2, PINK, 100, "Healer", 15, "h"))
+                                            self.wave["healer"] -= 1
+
+                                        if self.wave["healer"] == 0:
+                                            if self.wave["shielded"] > 0:
+                                                self.enemies.append(Enemy(self.map_paths[self.selected_map], 400, 3, GRAY, 120, "Shielded", 60, "n"))
+                                                self.wave["shielded"] -= 1
+
+                                            if self.wave["shielded"] == 0:
+                                                if self.wave["necro"] > 0:
+                                                    self.enemies.append(Enemy(self.map_paths[self.selected_map], 1500, 3, VERYDARKGRAY, 125, "Necromancer", 25, "s"))
+                                                    self.wave["necro"] -= 1
+
+                                                if self.wave["necro"] == 0:
+                                                    if self.wave["titan"] > 0:
+                                                        self.enemies.append(Enemy(self.map_paths[self.selected_map], 17500, 2, BURPLE, 500, "Titan Boss", 50, "n"))
+                                                        self.wave["titan"] -= 1
+
+                                                    if self.wave["titan"] == 0:
+                                                        if self.wave["jester"] > 0:
+                                                            self.enemies.append(Enemy(self.map_paths[self.selected_map], 4000, 3, PURPLE, 225, "Jester", 20, "j"))
+                                                            self.wave["jester"] -= 1                                                 
+        if len(self.enemies) == 0:
+            self.wave_started = False
+            self.cash += (50 + (self.current_wave * 25))
+            if self.current_wave <= 8:
+                self.enemy_spawn_timer = 20
+            elif self.current_wave == 9:
+                self.enemy_spawn_timer = 10
+            elif self.current_wave >= 14:
+                self.enemy_spawn_timer = 5
+
+    def unit_and_enemies_thread_oh_god_help(self):
+        while self.running:
             # Update enemies
-            for enemy in enemies[:]:
+            for enemy in self.enemies[:]:
                 if enemy.move():
-                    base_health -= enemy.health
-                    cash += round(enemy.cash/2)
-                    enemies.remove(enemy)
+                    self.base_health -= enemy.health
+                    self.cash += round(enemy.cash/2)
+                    self.enemies.remove(enemy)
                 elif enemy.health <= 0:
-                    cash += enemy.cash
-                    enemies.remove(enemy)
+                    self.cash += enemy.cash
+                    self.enemies.remove(enemy)
                 elif enemy.type == "h":
-                    if heal_time >= 150:                        
-                        for enemy in enemies:
+                    if self.heal_time >= 150:                        
+                        for enemy in self.enemies:
                             enemy.health += round(enemy.max_health/7)
                             if enemy.health > enemy.max_health:
                                 enemy.health = enemy.max_health
-                        heal_time = 0
+                        self.heal_time = 0
                     else:
-                        heal_time += 1
+                        self.heal_time += 1
 
                 elif enemy.type == "s":
-                    if spawn_time >= 200:
-                        wave = waves[current_wave - 1]   
+                    if self.spawn_time >= 200:
+                        self.wave = self.waves[self.current_wave - 1]   
                         for i in range(random.randint(6, 10)):
-                            spawn_enemy = random.choice(list(wave.keys())[:6])
-                            wave[spawn_enemy] += 1
-                            spawn_time = 0
+                            spawn_enemy = random.choice(list(self.wave.keys())[:6])
+                            self.wave[spawn_enemy] += 1
+                            self.spawn_time = 0
                     else:
-                        spawn_time += 1
+                        self.spawn_time += 1
 
                 elif enemy.type == "j":
-                    if buff_time >= 175:
-                        buffed_enem = random.randint(0, (len(enemies)-1))
+                    if self.buff_time >= 175:
+                        buffed_enem = random.randint(0, (len(self.enemies)-1))
                         buff = random.choice(["s", "h", "d"])
                         if buff == "s":
-                            enemies[buffed_enem].speed += random.randint(1, 2)
+                            self.enemies[buffed_enem].speed += random.randint(1, 2)
                         elif buff == "h":
-                            enemies[buffed_enem].health += round(enemies[buffed_enem].max_health/10)
+                            self.enemies[buffed_enem].health += round(self.enemies[buffed_enem].max_health/10)
                         elif buff == "d":
-                            enemies[buffed_enem].shield += 0.2
-                            if enemies[buffed_enem].shield >= 1:
-                                enemies[buffed_enem].shield = 0.8
-                        buff_time = 0
+                            self.enemies[buffed_enem].shield += 0.2
+                            if self.enemies[buffed_enem].shield >= 1:
+                                self.enemies[buffed_enem].shield = 0.8
+                        self.buff_time = 0
                     else:
-                        buff_time += 1
+                        self.buff_time += 1
 
             # Update units
-            for unit in units:
-                unit.attack(enemies, bullets)
+            for unit in self.units:
+                unit.attack(self.enemies, self.bullets)
                 if unit.move():
-                    units.remove(unit)
+                    self.units.remove(unit)
                 if unit.health <= 0:
-                    units.remove(unit)
+                    self.units.remove(unit)
 
-                for enemy in enemies:
+                for enemy in self.enemies:
                     if abs(enemy.x - unit.x) <= 8 and abs(enemy.y - unit.y) <= 8:
                         if enemy.health >= unit.health:
                             enemy.health -= unit.health
-                            units.remove(unit)
+                            self.units.remove(unit)
                             break
                         else:
                             ehp = enemy.health
                             enemy.health -= unit.health
                             unit.health -= ehp
-                                
 
 
-            # Update towers
-            for tower in towers:
-                tower.attack(enemies, bullets)
+    def towers_and_bullets_thread_oh_god_two_threads_its_going_to_break(self):
+        # Update towers
+        while self.running:
+            for tower in self.towers:
+                
+                if tower.special == "u":
+                    self.units = tower.attack(self.enemies, self.bullets, extra=[self.map_paths, self.selected_map, self.units])
+                else:
+                    tower.attack(self.enemies, self.bullets, extra=[])
 
                 if tower.special == "s":
                     tower.tick()
                     if tower.time >= tower.max_time:
-                        for engineer in towers:
+                        for engineer in self.towers:
                             if engineer.special == "e":
                                 if engineer.slot == tower.slot:
                                     engineer.sentries -= 1
-                        towers.remove(tower)
+                        self.towers.remove(tower)
 
                 if tower.special == "e":
                     if tower.scrap >= tower.maxscrap:
@@ -1502,94 +1377,325 @@ while running:
                             else:
                                 ypos = random.randint(10, 30)
 
-                            towers.append(Sentry(tower.x+xpos, tower.y+ypos, tower.sentrylv, tower.slot))
+                            self.towers.append(Sentry(tower.x+xpos, tower.y+ypos, tower.sentrylv, tower.slot))
                             tower.sentries += 1
                             tower.scrap = 0   
 
             # Update bullets
-            for bullet in bullets[:]:
+            for bullet in self.bullets[:]:
                 if bullet.move():
-                    bullets.remove(bullet)
-
-            # Draw towers
-            for tower in towers:
-                tower.draw(screen)
-
-            # Draw units
-            for unit in units:
-                unit.draw(screen)
-
-            # Draw enemies
-            for enemy in enemies:
-                enemy.draw(screen)
-
-            # Draw bullets
-            for bullet in bullets:
-                bullet.draw(screen)
-
-            # Draw UI
-            font = pygame.font.Font(None, 36)
-            text = font.render(f"Cash: ${cash}", True, BLACK)
-            screen.blit(text, (10, 10))
-            text = font.render(f"Base Health: {base_health}", True, BLACK)
-            screen.blit(text, (10, 50))
-            text = font.render(f"Wave: {current_wave}", True, BLACK)
-            screen.blit(text, (10, 90))
-
-            # Draw selected tower type
-            if tower_selection == 1:
-                text = font.render("Selected Tower: Shooter (175 cash)", True, BLACK)
-            elif tower_selection == 2:
-                text = font.render("Selected Tower: Confusion Bomber (2500 cash)", True, BLACK)
-            elif tower_selection == 3:
-                text = font.render("Selected Tower: Ice Blaster (1500 cash)", True, BLACK)
-            elif tower_selection == 4:
-                text = font.render("Selected Tower: Archer (500 cash)", True, BLACK)
-            elif tower_selection == 5:
-                text = font.render("Selected Tower: Rifleman (1100 cash)", True, BLACK)
-            elif tower_selection == 6:
-                text = font.render("Selected Tower: Swordsman (1100 cash)", True, BLACK)
-            elif tower_selection == 7:
-                text = font.render("Selected Tower: Turret (4800 cash)", True, BLACK)
-            elif tower_selection == 8:
-                text = font.render("Selected Tower: Engineer (1200 cash)", True, BLACK)
-            elif tower_selection == 9:
-                text = text = font.render("Selected Tower: Military Base (3300 cash)", True, BLACK)
-            screen.blit(text, (200, 10))
-
-            # upgrades
-            if towerselected:
-                pygame.draw.rect(screen, DARKGRAY if not moving_ui else GRAY, (gui_x, gui_y, 200, 300))
-                pygame.draw.rect(screen, BLACK, (gui_x, gui_y, 200, 300), 2)
-                pygame.draw.rect(screen, GREEN, (gui_x, gui_y+250, 100, 50))
-                pygame.draw.rect(screen, RED, (gui_x+100, gui_y+250, 100, 50))
-                font2 = pygame.font.Font(None, 25)
-                selldiag = font2.render("Sell (x)", True, BLACK)
-                upgdiag = font2.render("Upgrade (e)", True, BLACK)
-                screen.blit(upgdiag, (gui_x, gui_y+250))
-                screen.blit(selldiag, (gui_x+100, gui_y+250))
-                for tower in towers:
-                    if tower.selected:
-                        tower.getupgrades(gui_x, gui_y)
-
-            # Check for game over
-            if base_health <= 0:
-                selected_map = None
-                towers.clear()
-                enemies.clear()
-                bullets.clear()
-                current_wave = 0
-                base_health = 200
-                cash = 400
-                wave_started = False
-                newwaves()
-
-    elif current_screen == "shop":
-        shop_screen()  # Ensure shop screen is redrawn each frame
+                    self.bullets.remove(bullet)
 
 
-    lastupgradetime += 1
-    pygame.display.flip()
-    clock.tick(30)
 
-pygame.quit()
+    def start(self):
+        self.newwaves()
+        self.current_screen = "main"
+        
+        # new addition that will break everything
+        self.unit_enemy_thread = threading.Thread(target=self.unit_and_enemies_thread_oh_god_help, daemon=True)
+        self.tower_bullet_thread = threading.Thread(target=self.towers_and_bullets_thread_oh_god_two_threads_its_going_to_break, daemon=True)
+        self.unit_enemy_thread.start()
+        self.tower_bullet_thread.start()
+
+
+        # Main game loop
+        self.running = True
+        while self.running:
+            self.screen.fill(WHITE)
+
+            # Event handling
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    x, y = event.pos
+
+                    if self.current_screen == "main":
+                        if self.selected_map is None:
+                            if 150 <= x <= 350 and 200 <= y <= 400:
+                                self.selected_map = 0
+                            elif 450 <= x <= 650 and 200 <= y <= 400:
+                                self.selected_map = 1
+                                self.cash = 800
+                                self.enemy_spawn_timer = 15
+                            elif 300 <= x <= 500 and 450 <= y <= 500:
+                                self.current_screen = "shop"
+                        else:
+                            if not self.moving_ui:
+                                for tower in self.towers:
+                                    if tower.x - 15 <= x <= tower.x + 15 and tower.y - 15 <= y <= tower.y + 15:
+                                        for thing in self.towers:
+                                            if thing.selected:
+                                                thing.selected = False
+                                        tower.selected = True
+                                        self.towerselected = True
+                                        break
+
+                                if self.placed[f"{self.tower_selection}"] < self.placelimits[f"{self.tower_selection}"] and self.towerselected == False:
+                                    if self.tower_selection == 1 and self.cash >= 175:
+                                        self.towers.append(Shooter(x, y))
+                                        self.placed["1"] += 1
+                                        self.cash -= 175
+                                    if self.tower_selection == 2 and self.cash >= 2500:
+                                        self.towers.append(CBomber(x, y))
+                                        self.placed["2"] += 1
+                                        self.cash -= 2500    
+                                    elif self.tower_selection == 3 and self.cash >= 1500:
+                                        self.towers.append(IceBlaster(x, y))
+                                        self.placed["3"] += 1
+                                        self.cash -= 1500    
+                                    elif self.tower_selection == 4 and self.cash >= 500:
+                                        self.towers.append(Archer(x, y))
+                                        self.placed["4"] += 1
+                                        self.cash -= 500
+                                    elif self.tower_selection == 5 and self.cash >= 1100:
+                                        self.towers.append(Rifleman(x, y))
+                                        self.placed["5"] += 1
+                                        self.cash -= 1100
+                                    elif self.tower_selection == 6 and self.cash >= 1100:
+                                        self.towers.append(Swordsman(x, y))
+                                        self.placed["6"] += 1
+                                        self.cash -= 1100
+                                    elif self.tower_selection == 7 and self.cash >= 4800:
+                                        self.towers.append(Turret(x, y))
+                                        self.placed["7"] += 1
+                                        self.cash -= 4800
+                                    elif self.tower_selection == 8 and self.cash >= 1200:
+                                        self.towers.append(Engineer(x, y, self.placed["8"]))
+                                        self.placed["8"] += 1
+                                        self.cash -= 1200
+                                    elif self.tower_selection == 9 and self.cash >= 3300:
+                                        self.towers.append(MilBase(x, y))
+                                        self.placed["9"] += 1
+                                        self.cash -= 3300
+                            else:
+                                self.gui_x, self.gui_y = x, y
+                                self.moving_ui = False
+                    elif self.current_screen == "shop":
+                        if 700 <= x <= 780 and 10 <= y <= 50:  # Back button
+                            self.current_screen = "main"
+
+                elif event.type == pygame.KEYDOWN:
+                    if self.current_screen == "main":
+                        if event.key == pygame.K_1:
+                            self.tower_selection = 1
+                        elif event.key == pygame.K_2:
+                            self.tower_selection = 2
+                        elif event.key == pygame.K_3:
+                            self.tower_selection = 3
+                        elif event.key == pygame.K_4:
+                            self.tower_selection = 4
+                        elif event.key == pygame.K_5:
+                            self.tower_selection = 5
+                        elif event.key == pygame.K_6:
+                            self.tower_selection = 6
+                        elif event.key == pygame.K_7:
+                            self.tower_selection = 7
+                        elif event.key == pygame.K_8:
+                            self.tower_selection = 8
+                        elif event.key == pygame.K_9:
+                            self.tower_selection = 9
+                        elif event.key == pygame.K_d:
+                            for tower in self.towers:
+                                tower.selected = False
+                            self.towerselected = False
+                        elif event.key == pygame.K_e:
+                            if self.lastupgradetime >= 5:
+                                for tower in self.towers:
+                                    if tower.selected:
+                                        self.cash = tower.upgrade(self.cash)
+                                self.lastupgradetime = 0
+                        elif event.key == pygame.K_x:
+                            for tower in self.towers:
+                                if tower.selected and tower.special != "s":
+                                    self.cash += tower.sell
+                                    self.towers.remove(tower)
+                                    self.towerselected = False
+                        elif event.key == pygame.K_m:
+                            self.moving_ui = not self.moving_ui 
+
+                        elif event.key == pygame.K_END:
+                            self.base_health = 0
+
+                        elif event.key == pygame.K_F10 and self.devmode:
+                            self.cash += 1000
+                        elif event.key == pygame.K_F9 and self.devmode:
+                            try:
+                                exec(input("Waiting for command... >"))
+                            except Exception as e:
+                                print(f"Error running: {e}")        
+
+            if self.current_screen == "main":
+                if self.selected_map is None:
+                    self.save_button_rect = main_screen(self.screen)
+                else:
+                    self.draw_path(self.selected_map)
+
+                    # Manage waves
+                    if not self.wave_started:
+                        self.wave_timer += 1
+                        if self.wave_timer > 120:
+                            self.start_wave()
+                            self.wave_timer = 0
+                    else:
+                        self.enemy_spawn_timer += 1
+                        if self.enemy_spawn_timer > self.enemy_spawn_time:
+                            self.spawn_enemies()
+                            self.enemy_spawn_timer = 0
+
+                    # Update enemies
+                    for enemy in self.enemies[:]:
+                        if enemy.move():
+                            self.base_health -= enemy.health
+                            self.cash += round(enemy.cash/2)
+                            self.enemies.remove(enemy)
+                        elif enemy.health <= 0:
+                            self.cash += enemy.cash
+                            self.enemies.remove(enemy)
+                        elif enemy.type == "h":
+                            if self.heal_time >= 150:                        
+                                for enemy in self.enemies:
+                                    enemy.health += round(enemy.max_health/7)
+                                    if enemy.health > enemy.max_health:
+                                        enemy.health = enemy.max_health
+                                self.heal_time = 0
+                            else:
+                                self.heal_time += 1
+
+                        elif enemy.type == "s":
+                            if self.spawn_time >= 200:
+                                self.wave = self.waves[self.current_wave - 1]   
+                                for i in range(random.randint(6, 10)):
+                                    spawn_enemy = random.choice(list(self.wave.keys())[:6])
+                                    self.wave[spawn_enemy] += 1
+                                    self.spawn_time = 0
+                            else:
+                                self.spawn_time += 1
+
+                        elif enemy.type == "j":
+                            if self.buff_time >= 175:
+                                buffed_enem = random.randint(0, (len(self.enemies)-1))
+                                buff = random.choice(["s", "h", "d"])
+                                if buff == "s":
+                                    self.enemies[buffed_enem].speed += random.randint(1, 2)
+                                elif buff == "h":
+                                    self.enemies[buffed_enem].health += round(self.enemies[buffed_enem].max_health/10)
+                                elif buff == "d":
+                                    self.enemies[buffed_enem].shield += 0.2
+                                    if self.enemies[buffed_enem].shield >= 1:
+                                        self.enemies[buffed_enem].shield = 0.8
+                                self.buff_time = 0
+                            else:
+                                self.buff_time += 1
+
+                    # Update units
+                    for unit in self.units:
+                        unit.attack(self.enemies, self.bullets)
+                        if unit.move():
+                            self.units.remove(unit)
+                        if unit.health <= 0:
+                            self.units.remove(unit)
+
+                        for enemy in self.enemies:
+                            if abs(enemy.x - unit.x) <= 8 and abs(enemy.y - unit.y) <= 8:
+                                if enemy.health >= unit.health:
+                                    enemy.health -= unit.health
+                                    self.units.remove(unit)
+                                    break
+                                else:
+                                    ehp = enemy.health
+                                    enemy.health -= unit.health
+                                    unit.health -= ehp
+                                        
+
+
+                    
+
+                    # Draw towers
+                    for tower in self.towers:
+                        tower.draw(self.screen)
+
+                    # Draw units
+                    for unit in self.units:
+                        unit.draw(self.screen)
+
+                    # Draw enemies
+                    for enemy in self.enemies:
+                        enemy.draw(self.screen)
+
+                    # Draw bullets
+                    for bullet in self.bullets:
+                        bullet.draw(self.screen)
+
+                    # Draw UI
+                    font = pygame.font.Font(None, 36)
+                    text = font.render(f"Cash: ${self.cash}", True, BLACK)
+                    self.screen.blit(text, (10, 10))
+                    text = font.render(f"Base Health: {self.base_health}", True, BLACK)
+                    self.screen.blit(text, (10, 50))
+                    text = font.render(f"Wave: {self.current_wave}", True, BLACK)
+                    self.screen.blit(text, (10, 90))
+
+                    # Draw selected tower type
+                    if self.tower_selection == 1:
+                        text = font.render("Selected Tower: Shooter (175 cash)", True, BLACK)
+                    elif self.tower_selection == 2:
+                        text = font.render("Selected Tower: Confusion Bomber (2500 cash)", True, BLACK)
+                    elif self.tower_selection == 3:
+                        text = font.render("Selected Tower: Ice Blaster (1500 cash)", True, BLACK)
+                    elif self.tower_selection == 4:
+                        text = font.render("Selected Tower: Archer (500 cash)", True, BLACK)
+                    elif self.tower_selection == 5:
+                        text = font.render("Selected Tower: Rifleman (1100 cash)", True, BLACK)
+                    elif self.tower_selection == 6:
+                        text = font.render("Selected Tower: Swordsman (1100 cash)", True, BLACK)
+                    elif self.tower_selection == 7:
+                        text = font.render("Selected Tower: Turret (4800 cash)", True, BLACK)
+                    elif self.tower_selection == 8:
+                        text = font.render("Selected Tower: Engineer (1200 cash)", True, BLACK)
+                    elif self.tower_selection == 9:
+                        text = font.render("Selected Tower: Military Base (3300 cash)", True, BLACK)
+                    self.screen.blit(text, (200, 10))
+
+                    # upgrades
+                    if self.towerselected:
+                        pygame.draw.rect(self.screen, DARKGRAY if not self.moving_ui else GRAY, (self.gui_x, self.gui_y, 200, 300))
+                        pygame.draw.rect(self.screen, BLACK, (self.gui_x, self.gui_y, 200, 300), 2)
+                        pygame.draw.rect(self.screen, GREEN, (self.gui_x, self.gui_y+250, 100, 50))
+                        pygame.draw.rect(self.screen, RED, (self.gui_x+100, self.gui_y+250, 100, 50))
+                        font2 = pygame.font.Font(None, 25)
+                        selldiag = font2.render("Sell (x)", True, BLACK)
+                        upgdiag = font2.render("Upgrade (e)", True, BLACK)
+                        self.screen.blit(upgdiag, (self.gui_x, self.gui_y+250))
+                        self.screen.blit(selldiag, (self.gui_x+100, self.gui_y+250))
+                        for tower in self.towers:
+                            if tower.selected:
+                                tower.getupgrades(self.gui_x, self.gui_y, self.screen)
+
+                    # Check for game over
+                    if self.base_health <= 0:
+                        self.selected_map = None
+                        self.towers.clear()
+                        self.enemies.clear()
+                        self.bullets.clear()
+                        self.current_wave = 0
+                        self.base_health = 200
+                        self.cash = 400
+                        self.wave_started = False
+                        self.newwaves()
+
+            elif self.current_screen == "shop":
+                shop_screen()  # Ensure shop screen is redrawn each frame
+
+
+            self.lastupgradetime += 1
+            pygame.display.flip()
+            self.clock.tick(30)
+
+        pygame.quit()        
+
+
+if __name__ == "__main__":
+    game = main() # making the main game loop object oriented was a pain in the ass and i will probably regret it in the future
+    game.start()
