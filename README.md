@@ -1,9 +1,9 @@
 # New tdr update 
-### ver 0.7r
+### ver 0.8rBROKEN
 ## New features:
-- Added 'units'
-- New tower: military base (not 100% finished but works well)
-- Engineer max lowered
-- A developer mode to help me test stuff
-- Confusion bomber effect reworked
-### Me 3/2/2025 at like 4 pm
+- ENTIRE GAME LOOP IS OBJ-ORIENTED
+- TOWER AND BULLET UPDATES NOW IN A SEPERATE THREAD
+- UNIT AND ENEMY UPDATES NOW IN A SEPERATE THREAD
+- IT WAS WORKING UNTIL I ADDED THE THREADING
+- ANYONE PLEASE HELP ME FIX IT I DONT HAVE THE TIME RIGHT NOW TO FIX
+### Me 16/5/2025 at like 7 pm
